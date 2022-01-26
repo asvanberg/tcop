@@ -82,7 +82,7 @@ update model message =
       else
         model :>
           [ do
-              response <- Scryfall.searchCard searchTerm
+              response <- Scryfall.searchCard $ searchTerm <> " game:paper"
               pure <<< Just <<< Fetched searchTerm $ case response of
                 Left error -> Left $ A.printError error
                 Right payload -> Right payload
