@@ -1,0 +1,42 @@
+*, ::after, ::before {
+  box-sizing: border-box;
+}
+body {
+  min-height: 100vh;
+  padding: 0;
+  margin: 0;
+}
+main {
+  min-height: 100vh;
+  display: grid;
+  grid-template-areas:
+    "search deck commander"
+    "search info info";
+  grid-template-columns: 10vw 1fr 10vw;
+  grid-template-rows: 1fr minmax(10vh, auto);
+}
+input {
+  width: 100%;
+}
+img {
+  max-width: 100%;
+}
+#search {
+  grid-area: search;
+  background-color: red;
+}
+#deck {
+  grid-area: deck;
+  background-color: yellow;
+}
+#commanders {
+  grid-area: commander;
+  background-color: green;
+}
+#info {
+  grid-area: info;
+  background-color: lightblue;
+}
+#search, #deck, #commanders {
+  padding: 1rem;
+}

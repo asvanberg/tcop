@@ -12,8 +12,11 @@ to generate this file without the comments in this block.
 -}
 { name = "my-project"
 , dependencies =
-  [ "affjax"
+  [ "aff"
+  , "affjax"
   , "argonaut"
+  , "argonaut-codecs"
+  , "bifunctors"
   , "console"
   , "effect"
   , "either"
@@ -21,6 +24,7 @@ to generate this file without the comments in this block.
   , "maybe"
   , "prelude"
   , "psci-support"
+  , "web-html"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]
