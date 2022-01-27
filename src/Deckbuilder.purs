@@ -65,13 +65,16 @@ data Message
 currentDeck :: Model -> Deck
 currentDeck = _.deck
 
-init :: Model
-init =
+init :: Maybe Deck -> Model
+init deck =
   { searchTerm: ""
-  , deck: { commanders: [] }
+  , deck: fromMaybe newDeck deck
   , searchResults: Inactive
   , dragging: Nothing
   }
+
+newDeck :: Deck
+newDeck = { commanders: [] }
 
 update :: ListUpdate Model Message
 update model message =

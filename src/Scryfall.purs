@@ -5,15 +5,17 @@ module Scryfall
   , Page
   , Prices
   , RelatedUris
+  , cardCollection
   , searchCard
   ) where
 
 import Prelude
 
 import Affjax as Ajax
+import Affjax.RequestBody as Body
 import Affjax.ResponseFormat as AR
 import Affjax.StatusCode (StatusCode(..))
-import Data.Argonaut (Json, decodeJson)
+import Data.Argonaut (Json, decodeJson, encodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
@@ -59,6 +61,11 @@ type Page a =
   , warnings :: Maybe (List String)
   }
 
+type Collection a =
+  { data :: Array a
+  , not_found :: Array Json
+  }
+
 emptyPage :: forall a. Page a
 emptyPage = { data: [], has_more: false, next_page: Nothing, total_cards: Just 0, warnings: Nothing }
 
@@ -70,6 +77,14 @@ searchCard query = do
       Right emptyPage
     else
       decodeAjaxResponse r
+
+cardCollection :: Array String -> Aff (Either Ajax.Error (Collection Card))
+cardCollection ids = do
+  let identifiers = map { id: _ } ids
+  response <- Ajax.post AR.json "https://api.scryfall.com/cards/collection"
+    $ Just <<< Body.json
+    $ encodeJson { identifiers }
+  pure $ response >>= decodeAjaxResponse
 
 decodeAjaxResponse :: forall a. DecodeJson a => Ajax.Response Json -> Either Ajax.Error a
 decodeAjaxResponse response =
