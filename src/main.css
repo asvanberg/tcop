@@ -1,13 +1,17 @@
 *, ::after, ::before {
   box-sizing: border-box;
 }
-body {
+body, body > div {
   min-height: 100vh;
   padding: 0;
   margin: 0;
 }
+body > div {
+  display: flex;
+  flex-direction: column;
+}
 main {
-  min-height: 100vh;
+  flex-grow: 1;
   display: grid;
   grid-template-areas:
     "search deck commander"
@@ -20,6 +24,22 @@ input {
 }
 img {
   max-width: 100%;
+}
+menu {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  background-color: lightgrey;
+}
+menu button {
+  padding: 0.75rem 1rem;
+  background-color: transparent;
+  border: none;
+}
+menu button:hover {
+  background-color: white;
+  cursor: pointer;
 }
 #search {
   grid-area: search;

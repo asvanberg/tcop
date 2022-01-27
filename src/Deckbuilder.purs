@@ -1,5 +1,6 @@
 module Deckbuilder
-  ( init
+  ( currentDeck
+  , init
   , view
   , Message
   , Model
@@ -60,6 +61,9 @@ data Message
   | Dragstart Scryfall.Card JS.Event
   | ValidateDropZone JS.Event
   | AddCommander
+
+currentDeck :: Model -> Deck
+currentDeck = _.deck
 
 init :: Model
 init =
@@ -158,7 +162,8 @@ viewSearch { searchTerm, searchResults } =
         [ HE.text "Error searching for \""
         , HE.text searchedTerm
         , HE.text "\": "
-        , HE.text error ]
+        , HE.text error
+        ]
       Searching searchedTerm ->
         [ HE.text "Searching for \""
         , HE.text searchedTerm
@@ -184,7 +189,8 @@ viewDeck :: Deck -> Html Message
 viewDeck { commanders } =
   HE.section
     [ HA.id "commanders"
-    , onDragenter' ValidateDropZone, onDragover' ValidateDropZone
+    , onDragenter' ValidateDropZone
+    , onDragover' ValidateDropZone
     , onDrop AddCommander
     ]
     [ HE.text "commanders"
