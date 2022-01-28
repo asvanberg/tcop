@@ -17,7 +17,7 @@ import Affjax as A
 import Control.Alt ((<|>))
 import Data.Array (head, length, snoc)
 import Data.Either (Either(..), either)
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Effect.Aff (Milliseconds(..), delay)
 import Effect.Class (liftEffect)
 import Flame (ListUpdate, Html, (:>))
@@ -42,6 +42,7 @@ type Model =
 
 type Deck =
   { commanders :: Array Card
+  , cards :: Array Card
   }
 
 data Search a
@@ -61,6 +62,8 @@ data Message
   | Dragstart Scryfall.Card JS.Event
   | ValidateCommanderDrop JS.Event
   | AddCommander
+  | ValidateDeckDrop JS.Event
+  | AddCard
 
 currentDeck :: Model -> Deck
 currentDeck = _.deck
@@ -74,7 +77,10 @@ init deck =
   }
 
 newDeck :: Deck
-newDeck = { commanders: [] }
+newDeck =
+  { commanders: []
+  , cards: []
+  }
 
 update :: ListUpdate Model Message
 update model message =
@@ -135,6 +141,17 @@ update model message =
             ]
         Nothing ->
           F.noMessages model
+    ValidateDeckDrop event ->
+      if isJust model.dragging then
+        model :> [ liftEffect $ JS.preventDefault event $> Nothing ]
+      else
+        F.noMessages model
+    AddCard ->
+      case model.dragging of
+        Just card ->
+          F.noMessages $ model { deck = model.deck { cards = snoc model.deck.cards card }}
+        Nothing ->
+          F.noMessages model
 
 getImageSrc :: Scryfall.Card -> Maybe String
 getImageSrc card =
@@ -152,7 +169,7 @@ view :: Model -> Array (Html Message)
 view model =
   [ HE.section "search" $ viewSearch model
   , viewCommanders model.deck
-  , HE.section "deck" $ "deck"
+  , viewDeck model.deck
   , HE.section "info" $ "info"
   ]
 
@@ -187,6 +204,16 @@ viewSearchResult card =
     -- this will trigger the image to be loaded for later use in the drag'n'drop
     , HE.img [ HA.style1 "display" "none", HA.src (fromMaybe "" $ getImageSrc card) ]
     ]
+
+viewDeck :: Deck -> Html Message
+viewDeck deck =
+  HE.section
+    [ HA.id "deck"
+    , onDragenter' ValidateDeckDrop
+    , onDragover' ValidateDeckDrop
+    , onDrop AddCard
+    ]
+    $ map (viewCard <<< _.scryfall) deck.cards
 
 viewCommanders :: Deck -> Html Message
 viewCommanders { commanders } =

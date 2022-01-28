@@ -1,6 +1,7 @@
 module Scryfall
   ( Card
   , CardFace
+  , Collection
   , ImageUris
   , Page
   , Prices
@@ -17,6 +18,7 @@ import Affjax.ResponseFormat as AR
 import Affjax.StatusCode (StatusCode(..))
 import Data.Argonaut (Json, decodeJson, encodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
+import Data.Array (null)
 import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
 import Data.List (List)
@@ -69,6 +71,9 @@ type Collection a =
 emptyPage :: forall a. Page a
 emptyPage = { data: [], has_more: false, next_page: Nothing, total_cards: Just 0, warnings: Nothing }
 
+emptyCollection :: forall a. Collection a
+emptyCollection = { data: [], not_found: [] }
+
 searchCard :: String -> Aff (Either Ajax.Error (Page Card))
 searchCard query = do
   response <- Ajax.get AR.json $ "https://api.scryfall.com/cards/search?q=" <> query
@@ -79,12 +84,15 @@ searchCard query = do
       decodeAjaxResponse r
 
 cardCollection :: Array String -> Aff (Either Ajax.Error (Collection Card))
-cardCollection ids = do
-  let identifiers = map { id: _ } ids
-  response <- Ajax.post AR.json "https://api.scryfall.com/cards/collection"
-    $ Just <<< Body.json
-    $ encodeJson { identifiers }
-  pure $ response >>= decodeAjaxResponse
+cardCollection ids =
+  if null ids then
+    pure <<< pure $ emptyCollection
+  else do
+    let identifiers = map { id: _ } ids
+    response <- Ajax.post AR.json "https://api.scryfall.com/cards/collection"
+      $ Just <<< Body.json
+      $ encodeJson { identifiers }
+    pure $ response >>= decodeAjaxResponse
 
 decodeAjaxResponse :: forall a. DecodeJson a => Ajax.Response Json -> Either Ajax.Error a
 decodeAjaxResponse response =
