@@ -59,7 +59,7 @@ data Message
   | Search String
   | Fetched String (Either String (Scryfall.Page Scryfall.Card))
   | Dragstart Scryfall.Card JS.Event
-  | ValidateDropZone JS.Event
+  | ValidateCommanderDrop JS.Event
   | AddCommander
 
 currentDeck :: Model -> Deck
@@ -125,7 +125,7 @@ update model message =
             F.noMessages $ model { deck = model.deck { commanders = newCommanders } }
         Nothing ->
           F.noMessages model
-    ValidateDropZone event ->
+    ValidateCommanderDrop event ->
       case model.dragging of
         Just _ ->
           model :>
@@ -151,7 +151,7 @@ firstFaceImages = _.card_faces >=> head >=> _.image_uris
 view :: Model -> Array (Html Message)
 view model =
   [ HE.section "search" $ viewSearch model
-  , viewDeck model.deck
+  , viewCommanders model.deck
   , HE.section "deck" $ "deck"
   , HE.section "info" $ "info"
   ]
@@ -188,23 +188,20 @@ viewSearchResult card =
     , HE.img [ HA.style1 "display" "none", HA.src (fromMaybe "" $ getImageSrc card) ]
     ]
 
-viewDeck :: Deck -> Html Message
-viewDeck { commanders } =
+viewCommanders :: Deck -> Html Message
+viewCommanders { commanders } =
   HE.section
     [ HA.id "commanders"
-    , onDragenter' ValidateDropZone
-    , onDragover' ValidateDropZone
+    , onDragenter' ValidateCommanderDrop
+    , onDragover' ValidateCommanderDrop
     , onDrop AddCommander
     ]
-    [ HE.text "commanders"
-    , HE.div_ $ map (viewCard <<< _.scryfall) commanders
-    ]
+    $ map (viewCard <<< _.scryfall) commanders
 
 viewCard :: forall a. Scryfall.Card -> Html a
 viewCard card =
-  HE.div [ HA.key card.id ]
-    case getImageUris card of
-      Just images ->
-        HE.img [ HA.src images.png, HA.width "300px", HA.createAttribute "loading" "lazy" ]
-      Nothing ->
-        HE.text card.name
+  case getImageUris card of
+    Just images ->
+      HE.img [ HA.key card.id, HA.src images.png, HA.width "300px", HA.createAttribute "loading" "lazy" ]
+    Nothing ->
+      HE.span [ HA.key card.id ] card.name

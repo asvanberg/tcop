@@ -91,7 +91,7 @@ view { deckbuilder, feedback } = HE.div "app"
           , HE.li_ $ HE.button [ HEv.onClick LoadDeck ] "Load"
           ]
       , HE.span_ $ fromMaybe "" $ head feedback
-      , HE.span_ "Tea cup icon"
+      , HE.span_ "🍵"
       ]
   , HE.main_ $ (map DeckbuilderMessage) <$> Deckbuilder.view deckbuilder
   ]
