@@ -8,13 +8,13 @@ import Prelude
 import Affjax (printError)
 import Control.Apply (lift3)
 import Data.Argonaut (decodeJson, encodeJson, parseJson, stringify)
-import Data.Array (splitAt)
+import Data.Array (length, splitAt)
 import Data.Bifunctor (lmap)
 import Data.Either (Either)
 import Data.Traversable (traverse)
-import Effect.Aff (Aff)
-import Scryfall as Scryfall
+import Effect.Aff (Aff, parallel, sequential)
 import Scryfall (Card, Collection)
+import Scryfall as Scryfall
 import Tcop.Deckbuilder (Deck) as Deckbuilder
 
 type ScryfallUUID = String
@@ -38,13 +38,16 @@ deserialize =
   map join <<< traverse toDeck <<< lmap show <<< (decodeJson <=< parseJson)
 
 toDeck :: SerializableDeck -> Aff (Either String Deckbuilder.Deck)
-toDeck serializableDeck = do
-  commanderCards <- Scryfall.cardCollection serializableDeck.commanders
+toDeck { commanders, cards } =
   -- Scryfall allows max 75 cards/request so we split into two
-  let { before, after } = splitAt 50 serializableDeck.cards
-  firstHalf <- Scryfall.cardCollection before
-  secondHalf <- Scryfall.cardCollection after
-  pure $ lmap printError $ lift3 reconstructDeck commanderCards firstHalf secondHalf
+  let
+    { before, after } = splitAt (length cards / 2) cards
+  in
+    sequential $ ado
+      commanderCards <- parallel $ Scryfall.cardCollection commanders
+      firstHalf <- parallel $ Scryfall.cardCollection before
+      secondHalf <- parallel $ Scryfall.cardCollection after
+      in lmap printError $ lift3 reconstructDeck commanderCards firstHalf secondHalf
 
 reconstructDeck :: Collection Card -> Collection Card -> Collection Card -> Deckbuilder.Deck
 reconstructDeck commanders firstHalf secondHalf =
