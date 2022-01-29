@@ -247,7 +247,7 @@ viewInfo deck =
       cardCost card >= 10.0
   in
     HE.section "info"
-      [ HE.text "Total cost: $", HE.text $ toStringWith (fixed 0) deckCost
+      [ HE.text $ "Total cost: $" <> toStringWith (fixed 0) deckCost
       , HE.ul_ $ allCards
           # map (_.scryfall)
           # filter isExpensive
