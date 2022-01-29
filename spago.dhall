@@ -16,15 +16,23 @@ to generate this file without the comments in this block.
   , "affjax"
   , "argonaut"
   , "argonaut-codecs"
+  , "arrays"
   , "bifunctors"
   , "console"
+  , "control"
   , "effect"
   , "either"
   , "flame"
+  , "foldable-traversable"
+  , "foreign"
   , "maybe"
+  , "numbers"
   , "prelude"
   , "psci-support"
+  , "tuples"
+  , "web-events"
   , "web-html"
+  , "web-storage"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]

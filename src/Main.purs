@@ -5,11 +5,10 @@ import Prelude
 import Data.Array (drop, head, snoc)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Time.Duration (Milliseconds(..))
 import Data.Tuple (Tuple(..))
 import Deckbuilder as Deckbuilder
 import Effect (Effect)
-import Effect.Aff (delay)
+import Effect.Aff (Milliseconds(..), delay)
 import Effect.Class (liftEffect)
 import Flame (QuerySelector(..), Html, ListUpdate, (:>))
 import Flame as F

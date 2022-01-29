@@ -21,7 +21,6 @@ import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Array (null)
 import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
-import Data.List (List)
 import Data.Maybe (Maybe(..))
 import Effect.Aff (Aff)
 import Foreign (ForeignError(..), unsafeToForeign)
@@ -60,7 +59,7 @@ type Page a =
   , has_more :: Boolean
   , next_page :: Maybe String
   , total_cards :: Maybe Int
-  , warnings :: Maybe (List String)
+  , warnings :: Maybe (Array String)
   }
 
 type Collection a =
