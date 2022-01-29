@@ -15,9 +15,12 @@ import Prelude
 
 import Affjax as A
 import Control.Alt ((<|>))
-import Data.Array (head, length, snoc)
+import Data.Array (filter, head, length, snoc, sortWith)
 import Data.Either (Either(..), either)
+import Data.Foldable (sum)
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
+import Data.Number (fromString)
+import Data.Number.Format (fixed, toStringWith)
 import Effect.Aff (Milliseconds(..), delay)
 import Effect.Class (liftEffect)
 import Flame (ListUpdate, Html, (:>))
@@ -149,7 +152,7 @@ update model message =
     AddCard ->
       case model.dragging of
         Just card ->
-          F.noMessages $ model { deck = model.deck { cards = snoc model.deck.cards card }}
+          F.noMessages $ model { deck = model.deck { cards = snoc model.deck.cards card } }
         Nothing ->
           F.noMessages model
 
@@ -170,7 +173,7 @@ view model =
   [ HE.section "search" $ viewSearch model
   , viewCommanders model.deck
   , viewDeck model.deck
-  , HE.section "info" $ "info"
+  , viewInfo model.deck
   ]
 
 viewSearch :: Model -> Array (Html Message)
@@ -232,3 +235,22 @@ viewCard card =
       HE.img [ HA.key card.id, HA.src images.png, HA.width "300px", HA.createAttribute "loading" "lazy" ]
     Nothing ->
       HE.span [ HA.key card.id ] card.name
+
+viewInfo :: Deck -> Html Message
+viewInfo deck =
+  let
+    allCards = deck.commanders <> deck.cards
+    cardCost card =
+      fromMaybe 0.0 $ fromString =<< card.prices.usd
+    deckCost = sum $ map (cardCost <<< _.scryfall) allCards
+    isExpensive card =
+      cardCost card >= 10.0
+  in
+    HE.section "info"
+      [ HE.text "Total cost: $", HE.text $ toStringWith (fixed 0) deckCost
+      , HE.ul_ $ allCards
+          # map (_.scryfall)
+          # filter isExpensive
+          # sortWith _.name
+          # map (\c -> HE.li_ $ c.name <> " ($" <> (show $ cardCost c) <> ")")
+      ]
