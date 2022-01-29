@@ -232,7 +232,7 @@ viewCard :: forall a. Scryfall.Card -> Html a
 viewCard card =
   case getImageUris card of
     Just images ->
-      HE.img [ HA.key card.id, HA.src images.png, HA.width "300px", HA.createAttribute "loading" "lazy" ]
+      HE.img [ HA.key card.id, HA.src images.normal, HA.width "280px", HA.createAttribute "loading" "lazy" ]
     Nothing ->
       HE.span [ HA.key card.id ] card.name
 

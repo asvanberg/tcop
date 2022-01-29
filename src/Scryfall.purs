@@ -42,6 +42,8 @@ type CardFace =
 type ImageUris =
   { png :: String
   , small :: String
+  , normal :: String
+  , large :: String
   }
 
 type Prices =
