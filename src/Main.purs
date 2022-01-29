@@ -6,7 +6,6 @@ import Data.Array (drop, head, snoc)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple (Tuple(..))
-import Deckbuilder as Deckbuilder
 import Effect (Effect)
 import Effect.Aff (Milliseconds(..), delay)
 import Effect.Class (liftEffect)
@@ -14,6 +13,7 @@ import Flame (QuerySelector(..), Html, ListUpdate, (:>))
 import Flame as F
 import Flame.Html.Element as HE
 import Flame.Html.Event as HEv
+import Tcop.Deckbuilder as Deckbuilder
 import Tcop.Serialization as Serialization
 import Web.HTML as Web
 import Web.HTML.Window as Window

@@ -1,4 +1,4 @@
-module Deckbuilder
+module Tcop.Deckbuilder
   ( currentDeck
   , init
   , view

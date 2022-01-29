@@ -12,10 +12,10 @@ import Data.Array (splitAt)
 import Data.Bifunctor (lmap)
 import Data.Either (Either)
 import Data.Traversable (traverse)
-import Deckbuilder (Deck) as Deckbuilder
 import Effect.Aff (Aff)
 import Scryfall as Scryfall
 import Scryfall (Card, Collection)
+import Tcop.Deckbuilder (Deck) as Deckbuilder
 
 type ScryfallUUID = String
 
