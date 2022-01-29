@@ -11,6 +11,6 @@
     "test": "spago test",
     "serve": "parcel src/index.html --open",
     "prebuild": "rimraf dist",
-    "build": "parcel build src/index.html --dist-dir docs"
+    "build": "parcel build src/index.html --dist-dir docs --public-url /tcop"
   }
 }
