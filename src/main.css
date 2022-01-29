@@ -21,10 +21,28 @@ main {
   flex-grow: 1;
   display: grid;
   grid-template-areas:
-    "search deck commander"
-    "search info info";
-  grid-template-columns: 10vw 1fr 10vw;
-  grid-template-rows: 1fr minmax(10vh, auto);
+    "search"
+    "commander"
+    "deck"
+    "info";
+}
+@media (min-width: 800px) {
+  main {
+    grid-template-areas:
+      "search commander"
+      "deck deck"
+      "info info";
+    grid-template-columns: 1fr minmax(25vh, auto);
+  }
+}
+@media (min-width: 1000px) {
+  main {
+    grid-template-areas:
+      "search deck commander"
+      "search info info";
+    grid-template-columns: 10vw 1fr 10vw;
+    grid-template-rows: 1fr minmax(10vh, auto);
+  }
 }
 input {
   width: 100%;
