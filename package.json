@@ -9,8 +9,8 @@
   },
   "scripts": {
     "test": "spago test",
-    "serve": "parcel src/index.html --open",
-    "prebuild": "rimraf dist",
-    "build": "parcel build src/index.html --dist-dir docs --public-url /tcop"
+    "serve": "parcel src/index.html --open --public-url /tcop",
+    "prebuild": "rimraf docs",
+    "build": "parcel build src/index.html --dist-dir docs --public-url /tcop && git add docs/ && git commit -m \"Publish new version\" docs/"
   }
 }
