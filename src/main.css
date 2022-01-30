@@ -81,14 +81,12 @@ menu button:hover {
 #deck div img {
   border: 0px solid transparent;
   border-radius: 10px;
-  z-index: 99;
-  position: relative;
 }
-#deck div img:hover {
-  z-index: 100;
-}
-#deck div img:not(:nth-child(2)) {
+#deck div img + img {
   margin-top: -120%;
+}
+#deck div img:hover + img {
+  margin-top: -5%;
 }
 @media (max-width: 800px) {
   #deck div {
