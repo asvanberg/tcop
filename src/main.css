@@ -72,6 +72,41 @@ menu button:hover {
 #deck {
   grid-area: deck;
   background-color: yellow;
+  display: flex;
+  flex-wrap: wrap;
+}
+#deck div {
+  flex: 1;
+}
+#deck div img {
+  border: 0px solid transparent;
+  border-radius: 10px;
+  z-index: 99;
+  position: relative;
+}
+#deck div img:hover {
+  z-index: 100;
+}
+#deck div img:not(:nth-child(2)) {
+  margin-top: -120%;
+}
+@media (max-width: 800px) {
+  #deck div {
+    flex-basis: 33%;
+  }
+}
+@media (max-width: 550px) {
+  #deck div {
+    flex-basis: 50%;
+  }
+}
+@media (max-width: 400px) {
+  #deck div {
+    flex-basis: 100%;
+  }
+  #deck div img:not(:nth-child(2)) {
+    margin-top: -95%;
+  }
 }
 #commanders {
   grid-area: commander;

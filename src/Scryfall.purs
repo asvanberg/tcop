@@ -33,6 +33,7 @@ type Card =
   , related_uris :: RelatedUris
   , image_uris :: Maybe ImageUris
   , card_faces :: Maybe (Array CardFace)
+  , type_line :: String
   }
 
 type CardFace =

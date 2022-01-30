@@ -15,12 +15,16 @@ import Prelude
 
 import Affjax as A
 import Control.Alt ((<|>))
-import Data.Array (filter, head, length, snoc, sortWith)
+import Control.Apply (lift2)
+import Data.Array (filter, head, length, singleton, snoc, sortBy, sortWith, (:))
 import Data.Either (Either(..), either)
 import Data.Foldable (sum)
+import Data.Map (fromFoldableWith, toUnfoldable)
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Number (fromString)
 import Data.Number.Format (fixed, toStringWith)
+import Data.String (Pattern(..), contains)
+import Data.Tuple (Tuple(..), uncurry)
 import Effect.Aff (Milliseconds(..), delay)
 import Effect.Class (liftEffect)
 import Flame (ListUpdate, Html, (:>))
@@ -208,15 +212,52 @@ viewSearchResult card =
     , HE.img [ HA.style1 "display" "none", HA.src (fromMaybe "" $ getImageSrc card) ]
     ]
 
+data CardType = Creature | Enchantment | Instant | Sorcery | Artifact | Planeswalker | Land
+
+derive instance cardTypeEq :: Eq CardType
+derive instance cardTypeOrd :: Ord CardType
+instance cardTypeShow :: Show CardType where
+  show Creature = "Creature"
+  show Instant = "Instant"
+  show Sorcery = "Sorcery"
+  show Enchantment = "Enchantment"
+  show Artifact = "Artifact"
+  show Planeswalker = "Planeswalker"
+  show Land = "Land"
+
+cardType :: Card -> CardType
+cardType { scryfall: { type_line } } =
+  if contains (Pattern "Creature") type_line then
+    Creature
+  else if contains (Pattern "Instant") type_line then
+    Instant
+  else if contains (Pattern "Sorcery") type_line then
+    Sorcery
+  else if contains (Pattern "Enchantment") type_line then
+    Enchantment
+  else if contains (Pattern "Artifact") type_line then
+    Artifact
+  else if contains (Pattern "Planeswalker") type_line then
+    Planeswalker
+  else
+    Land
+
 viewDeck :: Deck -> Html Message
 viewDeck deck =
-  HE.section
-    [ HA.id "deck"
-    , onDragenter' ValidateDeckDrop
-    , onDragover' ValidateDeckDrop
-    , onDrop AddCard
-    ]
-    $ map (viewCard <<< _.scryfall) deck.cards
+  let
+   cardsByType = fromFoldableWith (<>) $ map (lift2 Tuple cardType singleton) deck.cards
+   viewCardType t cards =
+     HE.div_ $ HE.div_ (show t <> " (" <> show (length cards) <> ")")
+      : (map (viewCard <<< _.scryfall) $ sortBy (comparing _.scryfall.name) cards)
+  in
+    HE.section
+      [ HA.id "deck"
+      , onDragenter' ValidateDeckDrop
+      , onDragover' ValidateDeckDrop
+      , onDrop AddCard
+      ]
+      $ map (uncurry viewCardType)
+      $ (toUnfoldable $ cardsByType :: Array (Tuple CardType (Array Card)))
 
 viewCommanders :: Deck -> Html Message
 viewCommanders { commanders } =
