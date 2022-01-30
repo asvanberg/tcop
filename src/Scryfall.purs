@@ -6,6 +6,7 @@ module Scryfall
   , Page
   , Prices
   , RelatedUris
+  , UUID
   , cardBack
   , cardCollection
   , searchCard
@@ -26,8 +27,10 @@ import Data.Maybe (Maybe(..))
 import Effect.Aff (Aff)
 import Foreign (ForeignError(..), unsafeToForeign)
 
+type UUID = String
+
 type Card =
-  { id :: String
+  { id :: UUID
   , name :: String
   , reserved :: Boolean
   , prices :: Prices

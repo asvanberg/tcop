@@ -16,7 +16,7 @@ import Prelude
 import Affjax as A
 import Control.Alt ((<|>))
 import Control.Apply (lift2)
-import Data.Array (filter, head, length, singleton, snoc, sortBy, sortWith, (:))
+import Data.Array (deleteAt, filter, findIndex, head, length, singleton, snoc, sortBy, sortWith, (:))
 import Data.Either (Either(..), either)
 import Data.Foldable (sum)
 import Data.Map (fromFoldableWith, toUnfoldable)
@@ -71,6 +71,7 @@ data Message
   | AddCommander
   | ValidateDeckDrop JS.Event
   | AddCard
+  | RemoveCard Scryfall.UUID
 
 currentDeck :: Model -> Deck
 currentDeck = _.deck
@@ -159,6 +160,22 @@ update model message =
           F.noMessages $ model { deck = model.deck { cards = snoc model.deck.cards card } }
         Nothing ->
           F.noMessages model
+    RemoveCard scryfallId ->
+      let
+        removeCardFrom = deleteFirstBy ((==) scryfallId <<< _.scryfall.id)
+        newCards = removeCardFrom model.deck.cards
+        newCommanders = removeCardFrom model.deck.commanders
+      in
+        F.noMessages model
+          { deck = model.deck
+              { cards = newCards
+              , commanders = newCommanders
+              }
+          }
+
+deleteFirstBy :: forall a. (a -> Boolean) -> Array a -> Array a
+deleteFirstBy p as =
+  fromMaybe as $ findIndex p as >>= flip deleteAt as
 
 getImageSrc :: Scryfall.Card -> Maybe String
 getImageSrc card =
@@ -272,9 +289,16 @@ viewCommanders { commanders } =
     ]
     $ map (viewCard <<< _.scryfall) commanders
 
-viewCard :: forall a. Scryfall.Card -> Html a
-viewCard =
-  viewCardImage (_.normal)
+viewCard :: Scryfall.Card -> Html Message
+viewCard card =
+  HE.div [ HA.class' "card" ]
+    [ HE.div [ HA.class' "controls" ]
+        [ HE.button
+            [ HA.onClick $ RemoveCard card.id ]
+            [ HE.text "🗑", HE.span_ " Remove" ]
+        ]
+    , viewCardImage (_.normal) card
+    ]
 
 viewInfo :: Deck -> Html Message
 viewInfo deck =

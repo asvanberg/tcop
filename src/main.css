@@ -87,10 +87,10 @@ menu button:hover {
 #deck div {
   flex: 1;
 }
-#deck div img + img {
+#deck div.card + div.card {
   margin-top: -120%;
 }
-#deck div img:hover + img {
+#deck div.card:hover + div.card {
   margin-top: -5%;
 }
 @media (max-width: 800px) {
@@ -124,4 +124,38 @@ menu button:hover {
 }
 img.card {
   border-radius: 4%;
+}
+div.card {
+  position: relative;
+}
+div.card div.controls {
+  display: none;
+  position: absolute;
+  top: 10%;
+  right: 6%;
+}
+div.card:hover div.controls {
+  display: flex;
+}
+div.card div.controls button {
+  padding: 0.5em 0.8em;
+  font-size: 80%;
+  border: 1px solid white;
+  background-color: #444;
+  color: white;
+  cursor: pointer;
+}
+div.card div.controls button:hover {
+  width: auto;
+}
+@media (hover: hover) {
+  div.card div.contrels button {
+    width: 2.5em;
+  }
+  div.card div.controls button span {
+    display: none;
+  }
+}
+div.card div.controls button:hover span {
+  display: inline;
 }
