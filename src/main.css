@@ -69,6 +69,15 @@ menu button:hover {
   grid-area: search;
   background-color: red;
 }
+#search .search-result img {
+  display: none;
+}
+#search .search-result:hover img {
+  display: block;
+}
+#search .search-result:hover span {
+  display: none;
+}
 #deck {
   grid-area: deck;
   background-color: yellow;
@@ -116,4 +125,7 @@ menu button:hover {
 }
 #search, #deck, #commanders {
   padding: 1rem;
+}
+img.card {
+  border-radius: 4%;
 }

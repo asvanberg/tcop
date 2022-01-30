@@ -206,10 +206,13 @@ viewSearch { searchTerm, searchResults } =
 
 viewSearchResult :: Scryfall.Card -> Html Message
 viewSearchResult card =
-  HE.div [ HA.draggable "true", onDragstart' $ Dragstart card ]
-    [ HE.text card.name
-    -- this will trigger the image to be loaded for later use in the drag'n'drop
-    , HE.img [ HA.style1 "display" "none", HA.src (fromMaybe "" $ getImageSrc card) ]
+  HE.div
+    [ HA.draggable "true"
+    , onDragstart' $ Dragstart card
+    , HA.class' "search-result"
+    ]
+    [ HE.span_ card.name
+    , HE.img [ HA.class' "card", HA.src (fromMaybe "" $ getImageSrc card) ]
     ]
 
 data CardType = Creature | Enchantment | Instant | Sorcery | Artifact | Planeswalker | Land
@@ -245,10 +248,10 @@ cardType { scryfall: { type_line } } =
 viewDeck :: Deck -> Html Message
 viewDeck deck =
   let
-   cardsByType = fromFoldableWith (<>) $ map (lift2 Tuple cardType singleton) deck.cards
-   viewCardType t cards =
-     HE.div_ $ HE.div_ (show t <> " (" <> show (length cards) <> ")")
-      : (map (viewCard <<< _.scryfall) $ sortBy (comparing _.scryfall.name) cards)
+    cardsByType = fromFoldableWith (<>) $ map (lift2 Tuple cardType singleton) deck.cards
+    viewCardType t cards =
+      HE.div_ $ HE.div_ (show t <> " (" <> show (length cards) <> ")")
+        : (map (viewCard <<< _.scryfall) $ sortBy (comparing _.scryfall.name) cards)
   in
     HE.section
       [ HA.id "deck"
