@@ -212,7 +212,7 @@ viewSearchResult card =
     , HA.class' "search-result"
     ]
     [ HE.span_ card.name
-    , HE.img [ HA.class' "card", HA.src (fromMaybe "" $ getImageSrc card) ]
+    , viewCardImage _.normal card
     ]
 
 data CardType = Creature | Enchantment | Instant | Sorcery | Artifact | Planeswalker | Land
@@ -273,12 +273,8 @@ viewCommanders { commanders } =
     $ map (viewCard <<< _.scryfall) commanders
 
 viewCard :: forall a. Scryfall.Card -> Html a
-viewCard card =
-  case getImageUris card of
-    Just images ->
-      HE.img [ HA.key card.id, HA.src images.normal, HA.width "280px", HA.createAttribute "loading" "lazy" ]
-    Nothing ->
-      HE.span [ HA.key card.id ] card.name
+viewCard =
+  viewCardImage (_.normal)
 
 viewInfo :: Deck -> Html Message
 viewInfo deck =
@@ -297,4 +293,17 @@ viewInfo deck =
           # filter isExpensive
           # sortWith _.name
           # map (\c -> HE.li_ $ c.name <> " ($" <> (show $ cardCost c) <> ")")
+      ]
+
+viewCardImage :: forall a. (Scryfall.ImageUris -> String) -> Scryfall.Card -> Html a
+viewCardImage format card =
+  let
+    imageUris = fromMaybe Scryfall.cardBack $ getImageUris card
+  in
+    HE.img
+      [ HA.key card.id
+      , HA.alt card.name
+      , HA.src $ format imageUris
+      , HA.class' "card"
+      , HA.createAttribute "loading" "lazy"
       ]

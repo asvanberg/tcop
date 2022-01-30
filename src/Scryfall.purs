@@ -6,6 +6,7 @@ module Scryfall
   , Page
   , Prices
   , RelatedUris
+  , cardBack
   , cardCollection
   , searchCard
   ) where
@@ -75,6 +76,14 @@ emptyPage = { data: [], has_more: false, next_page: Nothing, total_cards: Just 0
 
 emptyCollection :: forall a. Collection a
 emptyCollection = { data: [], not_found: [] }
+
+cardBack :: ImageUris
+cardBack =
+  { png: "https://c1.scryfall.com/file/scryfall-card-backs/png/59/597b79b3-7d77-4261-871a-60dd17403388.png"
+  , small: "https://c1.scryfall.com/file/scryfall-card-backs/small/59/597b79b3-7d77-4261-871a-60dd17403388.jpg"
+  , normal: "https://c1.scryfall.com/file/scryfall-card-backs/normal/59/597b79b3-7d77-4261-871a-60dd17403388.jpg"
+  , large: "https://c1.scryfall.com/file/scryfall-card-backs/large/59/597b79b3-7d77-4261-871a-60dd17403388.jpg"
+  }
 
 searchCard :: String -> Aff (Either Ajax.Error (Page Card))
 searchCard query = do

@@ -87,10 +87,6 @@ menu button:hover {
 #deck div {
   flex: 1;
 }
-#deck div img {
-  border: 0px solid transparent;
-  border-radius: 10px;
-}
 #deck div img + img {
   margin-top: -120%;
 }
