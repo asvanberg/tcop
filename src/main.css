@@ -1,3 +1,7 @@
+:root {
+  --card-width: 14em;
+  --breakpoint-xl: 1000px;
+}
 *, ::after, ::before {
   box-sizing: border-box;
 }
@@ -26,13 +30,13 @@ main {
     "deck"
     "info";
 }
-@media (min-width: 800px) {
+@media (min-width: 750px) {
   main {
     grid-template-areas:
       "search commander"
       "deck deck"
       "info info";
-    grid-template-columns: 1fr minmax(25vh, auto);
+    grid-template-columns: calc(2em + var(--card-width)) 1fr;
   }
 }
 @media (min-width: 1000px) {
@@ -40,7 +44,7 @@ main {
     grid-template-areas:
       "search deck commander"
       "search info info";
-    grid-template-columns: 10vw 1fr 10vw;
+    grid-template-columns: calc(2em + var(--card-width)) 1fr calc(2em + var(--card-width));
     grid-template-rows: 1fr minmax(10vh, auto);
   }
 }
@@ -84,36 +88,22 @@ menu button:hover {
   display: flex;
   flex-wrap: wrap;
 }
-#deck div {
-  flex: 1;
-}
 #deck div.card + div.card {
   margin-top: -120%;
 }
 #deck div.card:hover + div.card {
   margin-top: -5%;
 }
-@media (max-width: 800px) {
-  #deck div {
-    flex-basis: 33%;
-  }
-}
-@media (max-width: 550px) {
-  #deck div {
-    flex-basis: 50%;
-  }
-}
-@media (max-width: 400px) {
-  #deck div {
-    flex-basis: 100%;
-  }
-  #deck div img:not(:nth-child(2)) {
-    margin-top: -95%;
-  }
-}
 #commanders {
   grid-area: commander;
   background-color: green;
+  display: flex;
+  flex-wrap: nowrap;
+}
+@media (min-width: 1000px) {
+  #commanders {
+    flex-direction: column;
+  }
 }
 #info {
   grid-area: info;
@@ -124,6 +114,7 @@ menu button:hover {
 }
 img.card {
   border-radius: 4%;
+  width: var(--card-width);
 }
 div.card {
   position: relative;
