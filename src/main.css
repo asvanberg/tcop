@@ -2,6 +2,12 @@
   --card-width: 14em;
   --breakpoint-xl: 1000px;
 }
+@font-face {
+  font-family: "Beleren2016-Bold";
+  src: url("fonts/Beleren2016-Bold.woff") format("woff"),
+       url("fonts/Beleren2016-Bold.ttf") format("truetype"),
+       url("fonts/Beleren2016-Bold.svg") format("svg");
+}
 *, ::after, ::before {
   box-sizing: border-box;
 }
@@ -9,6 +15,7 @@ body, body > div {
   min-height: 100vh;
   padding: 0;
   margin: 0;
+  font-family: "Beleren2016-Bold";
 }
 body > div {
   display: flex;
