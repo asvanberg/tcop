@@ -5,6 +5,7 @@ module Tcop.Deckbuilder
   , Message
   , Model
   , Deck
+  , SearchResult
   , update
   , Card
   , Search
@@ -16,7 +17,7 @@ import Prelude
 import Affjax as A
 import Control.Alt ((<|>))
 import Control.Apply (lift2)
-import Data.Array (deleteAt, filter, findIndex, head, length, singleton, snoc, sortBy, sortWith, (:))
+import Data.Array (deleteAt, filter, findIndex, head, length, mapWithIndex, singleton, snoc, sortBy, sortWith, (:))
 import Data.Either (Either(..), either)
 import Data.Foldable (sum)
 import Data.Map (fromFoldableWith, toUnfoldable)
@@ -43,13 +44,18 @@ type SearchTerm = String
 type Model =
   { searchTerm :: SearchTerm
   , deck :: Deck
-  , searchResults :: Search (Scryfall.Page Scryfall.Card)
-  , dragging :: Maybe Card
+  , searchResults :: Search (Array SearchResult)
+  , dragging :: Maybe Scryfall.Card
   }
 
 type Deck =
   { commanders :: Array Card
   , cards :: Array Card
+  }
+
+type SearchResult =
+  { scryfall :: Scryfall.Card
+  , expanded :: Boolean
   }
 
 data Search a
@@ -68,10 +74,11 @@ data Message
   | Fetched String (Either String (Scryfall.Page Scryfall.Card))
   | Dragstart Scryfall.Card JS.Event
   | ValidateCommanderDrop JS.Event
-  | AddCommander
+  | AddCommander (Maybe Scryfall.Card)
   | ValidateDeckDrop JS.Event
-  | AddCard
+  | AddCard (Maybe Scryfall.Card)
   | RemoveCard Scryfall.UUID
+  | ExpandSearchResult Int
 
 currentDeck :: Model -> Deck
 currentDeck = _.deck
@@ -110,11 +117,16 @@ update model message =
           ]
     Fetched searchedTerm result ->
       if searchedTerm == model.searchTerm then
-        F.noMessages $ model { searchResults = either (Error searchedTerm) (Results searchedTerm) result }
+        F.noMessages $ model
+          { searchResults = either
+              (Error searchedTerm)
+              (\page -> Results searchedTerm ({ expanded: false, scryfall: _ } <$> page.data))
+              result
+          }
       else
         F.noMessages model
     Dragstart card event ->
-      model { dragging = Just { scryfall: card } } :>
+      model { dragging = Just card } :>
         [ case Drag.fromEvent event of
             Just dragEvent ->
               liftEffect $ do
@@ -130,11 +142,11 @@ update model message =
             Nothing ->
               pure Nothing
         ]
-    AddCommander ->
-      case model.dragging of
+    AddCommander cardToAdd ->
+      case cardToAdd of
         Just card ->
           let
-            newCommanders = snoc model.deck.commanders card
+            newCommanders = snoc model.deck.commanders { scryfall: card }
           in
             F.noMessages $ model { deck = model.deck { commanders = newCommanders } }
         Nothing ->
@@ -154,10 +166,10 @@ update model message =
         model :> [ liftEffect $ JS.preventDefault event $> Nothing ]
       else
         F.noMessages model
-    AddCard ->
-      case model.dragging of
+    AddCard cardToAdd ->
+      case cardToAdd of
         Just card ->
-          F.noMessages $ model { deck = model.deck { cards = snoc model.deck.cards card } }
+          F.noMessages $ model { deck = model.deck { cards = snoc model.deck.cards { scryfall: card } } }
         Nothing ->
           F.noMessages model
     RemoveCard scryfallId ->
@@ -172,6 +184,17 @@ update model message =
               , commanders = newCommanders
               }
           }
+    ExpandSearchResult index ->
+      case model.searchResults of
+        Results searchTerm results ->
+          let
+            expandedResults = results
+              # mapWithIndex \i result -> result
+                  { expanded = i == index && not result.expanded }
+
+          in
+            F.noMessages model { searchResults = Results searchTerm expandedResults }
+        _ -> F.noMessages model
 
 deleteFirstBy :: forall a. (a -> Boolean) -> Array a -> Array a
 deleteFirstBy p as =
@@ -192,44 +215,53 @@ firstFaceImages = _.card_faces >=> head >=> _.image_uris
 view :: Model -> Array (Html Message)
 view model =
   [ HE.section "search" $ viewSearch model
-  , viewCommanders model.deck
-  , viewDeck model.deck
+  , viewCommanders model
+  , viewDeck model
   , viewInfo model.deck
   ]
 
 viewSearch :: Model -> Array (Html Message)
 viewSearch { searchTerm, searchResults } =
-  [ HE.input [ onInput SetSearchTerm, HA.value searchTerm, HA.type' "text" ]
-  , HE.div_ $ case searchResults of
-      Inactive -> [ HE.text "Search for some cards" ]
-      Error searchedTerm error ->
-        [ HE.text "Error searching for \""
-        , HE.text searchedTerm
-        , HE.text "\": "
-        , HE.text error
-        ]
-      Searching searchedTerm ->
-        [ HE.text "Searching for \""
-        , HE.text searchedTerm
-        , HE.text "\""
-        ]
-      Results searchedTerm cards ->
-        [ HE.div_ $ viewSearchResult <$> cards.data
-        , HE.text <<< show $ (fromMaybe (length cards.data) cards.total_cards)
-        , HE.text " results for term: "
-        , HE.text searchedTerm
-        ]
-  ]
+  HE.input [ onInput SetSearchTerm, HA.value searchTerm, HA.type' "text" ]
+    :
+      ( case searchResults of
+          Inactive -> [ HE.text "Search for some cards" ]
+          Error searchedTerm error ->
+            [ HE.text "Error searching for \""
+            , HE.text searchedTerm
+            , HE.text "\": "
+            , HE.text error
+            ]
+          Searching searchedTerm ->
+            [ HE.text "Searching for \""
+            , HE.text searchedTerm
+            , HE.text "\""
+            ]
+          Results searchedTerm cards ->
+            [ HE.ul_ $ mapWithIndex viewSearchResult cards
+            , HE.text <<< show $ length cards
+            , HE.text " results for term: "
+            , HE.text searchedTerm
+            ]
+      )
 
-viewSearchResult :: Scryfall.Card -> Html Message
-viewSearchResult card =
-  HE.div
+viewSearchResult :: Int -> SearchResult -> Html Message
+viewSearchResult index card =
+  HE.li
     [ HA.draggable "true"
-    , onDragstart' $ Dragstart card
+    , onDragstart' $ Dragstart card.scryfall
     , HA.class' "search-result"
+    , HA.class' $ if card.expanded then "expanded" else ""
+    , HA.onClick $ ExpandSearchResult index
     ]
-    [ HE.span_ card.name
-    , viewCardImage _.normal card
+    [ HE.div_ card.scryfall.name
+    , HE.div [ HA.class' "card", HA.class' $ if card.expanded then "active" else "" ]
+        [ viewCardImage _.normal card.scryfall
+        , HE.div [ HA.class' "controls" ]
+            [ HE.button [ HA.onClick $ AddCard $ Just card.scryfall ] "Add to deck"
+            , HE.button [ HA.onClick $ AddCommander $ Just card.scryfall ] "Set as commander"
+            ]
+        ]
     ]
 
 data CardType = Creature | Enchantment | Instant | Sorcery | Artifact | Planeswalker | Land
@@ -262,30 +294,30 @@ cardType { scryfall: { type_line } } =
   else
     Land
 
-viewDeck :: Deck -> Html Message
-viewDeck deck =
+viewDeck :: Model -> Html Message
+viewDeck { deck, dragging } =
   let
     cardsByType = fromFoldableWith (<>) $ map (lift2 Tuple cardType singleton) deck.cards
     viewCardType t cards =
-      HE.div_ $ HE.div_ (show t <> " (" <> show (length cards) <> ")")
+      HE.div [ HA.class' "card-group" ] $ HE.div_ (show t <> " (" <> show (length cards) <> ")")
         : (map (viewCard <<< _.scryfall) $ sortBy (comparing _.scryfall.name) cards)
   in
     HE.section
       [ HA.id "deck"
       , onDragenter' ValidateDeckDrop
       , onDragover' ValidateDeckDrop
-      , onDrop AddCard
+      , onDrop $ AddCard dragging
       ]
       $ map (uncurry viewCardType)
       $ (toUnfoldable $ cardsByType :: Array (Tuple CardType (Array Card)))
 
-viewCommanders :: Deck -> Html Message
-viewCommanders { commanders } =
+viewCommanders :: Model -> Html Message
+viewCommanders { deck: { commanders }, dragging } =
   HE.section
     [ HA.id "commanders"
     , onDragenter' ValidateCommanderDrop
     , onDragover' ValidateCommanderDrop
-    , onDrop AddCommander
+    , onDrop $ AddCommander dragging
     ]
     $ map (viewCard <<< _.scryfall) commanders
 

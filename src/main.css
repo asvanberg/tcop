@@ -80,14 +80,36 @@ menu button:hover {
   grid-area: search;
   background-color: red;
 }
-#search .search-result img {
+#search ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+#search .search-result {
+  border: 1px solid black;
+  font-size: 120%;
+  padding: 0.2em;
+}
+#search .search-result div.card {
   display: none;
 }
-#search .search-result:hover img {
-  display: block;
+@media (hover: none) {
+  #search .search-result.expanded div.card {
+    display: inline-block;
+  }
+  #search .search-result.expanded div.card .controls {
+    display: flex;
+    flex-direction: row;
+    position: static;
+  }
 }
-#search .search-result:hover span {
-  display: none;
+@media (hover: hover) {
+  #search .search-result:hover div.card {
+    display: inline-block;
+  }
+  #search .search-result div.card .controls {
+    display: none;
+  }
 }
 #deck {
   grid-area: deck;
