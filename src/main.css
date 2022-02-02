@@ -137,6 +137,8 @@ menu button:hover {
 #info {
   grid-area: info;
   background-color: lightblue;
+  display: flex;
+  flex-direction: row;
 }
 #search, #deck, #commanders {
   padding: 1rem;
@@ -178,4 +180,22 @@ div.card div.controls button:hover {
 }
 div.card div.controls button:hover span {
   display: inline;
+}
+.chart .W {
+  fill: white;
+}
+.chart .U {
+  fill: blue;
+}
+.chart .B {
+  fill: black;
+}
+.chart .R {
+  fill: red;
+}
+.chart .g {
+  fill: green;
+}
+.chart .c {
+  fill: gray;
 }

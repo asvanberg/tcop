@@ -2,6 +2,7 @@ module Scryfall
   ( Card
   , CardFace
   , Collection
+  , Color(..)
   , ImageUris
   , Page
   , Prices
@@ -18,8 +19,8 @@ import Affjax as Ajax
 import Affjax.RequestBody as Body
 import Affjax.ResponseFormat as AR
 import Affjax.StatusCode (StatusCode(..))
-import Data.Argonaut (Json, decodeJson, encodeJson)
-import Data.Argonaut.Decode.Class (class DecodeJson)
+import Data.Argonaut (Json, decodeJson, encodeJson, toString)
+import Data.Argonaut.Decode (class DecodeJson, JsonDecodeError(..))
 import Data.Array (null)
 import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
@@ -38,7 +39,22 @@ type Card =
   , image_uris :: Maybe ImageUris
   , card_faces :: Maybe (Array CardFace)
   , type_line :: String
+  , produced_mana :: Maybe (Array (Color))
+  , color_identity :: Array Color
   }
+
+data Color = White | Blue | Black | Red | Green | Colorless
+
+derive instance colorEq :: Eq Color
+instance DecodeJson Color where
+  decodeJson json = case toString json of
+    Just "W" -> Right White
+    Just "U" -> Right Blue
+    Just "B" -> Right Black
+    Just "R" -> Right Red
+    Just "G" -> Right Green
+    Just "C" -> Right Colorless
+    _ -> Left $ UnexpectedValue json
 
 type CardFace =
   { image_uris :: Maybe ImageUris

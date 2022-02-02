@@ -17,7 +17,7 @@ import Prelude
 import Affjax as A
 import Control.Alt ((<|>))
 import Control.Apply (lift2)
-import Data.Array (deleteAt, filter, findIndex, head, length, mapWithIndex, singleton, snoc, sortBy, sortWith, (:))
+import Data.Array (catMaybes, deleteAt, elem, filter, findIndex, foldMap, head, length, mapWithIndex, nubEq, singleton, snoc, sortBy, sortWith, (:))
 import Data.Either (Either(..), either)
 import Data.Foldable (sum)
 import Data.Map (fromFoldableWith, toUnfoldable)
@@ -34,6 +34,7 @@ import Flame.Html.Attribute as HA
 import Flame.Html.Element as HE
 import Flame.Html.Event (onDragenter', onDragover', onDragstart', onDrop, onInput)
 import Scryfall as Scryfall
+import Tcop.Chart as Chart
 import Web.Event.Event (Event, preventDefault) as JS
 import Web.HTML.Event.DataTransfer (setDragImage) as Drag
 import Web.HTML.Event.DragEvent (dataTransfer, fromEvent) as Drag
@@ -343,13 +344,49 @@ viewInfo deck =
       cardCost card >= 10.0
   in
     HE.section "info"
-      [ HE.text $ "Total cost: $" <> toStringWith (fixed 0) deckCost
-      , HE.ul_ $ allCards
-          # map (_.scryfall)
-          # filter isExpensive
-          # sortWith _.name
-          # map (\c -> HE.li_ $ c.name <> " ($" <> (show $ cardCost c) <> ")")
+      [ HE.section_
+          [ HE.h4_ "Cost"
+          , HE.text $ "Total: $" <> toStringWith (fixed 0) deckCost
+          , HE.h5_ "Expensive cards"
+          , HE.ul_ $ allCards
+              # map (_.scryfall)
+              # filter isExpensive
+              # sortWith _.name
+              # map (\c -> HE.li_ $ c.name <> " ($" <> (show $ cardCost c) <> ")")
+          ]
+      , viewManaProduction deck
       ]
+
+viewManaProduction :: Deck -> Html Message
+viewManaProduction { commanders, cards } =
+  let
+    allCards = map (_.scryfall) $ commanders <> cards
+    landCards = map (_.scryfall) $ filter (cardType >>> (==) Land) cards
+    deckColorIdentity = nubEq $ foldMap (_.scryfall.color_identity) commanders <> [ Scryfall.Colorless ]
+    producers c_ color =
+      c_
+        # map (_.produced_mana)
+        # catMaybes
+        # filter (elem color)
+        # length
+    slices c_ = deckColorIdentity
+      # (map $ lift2 Chart.Slice (producers c_) magicColorToHtmlClass)
+  in
+    HE.section_
+      [ HE.h4_ "Mana base"
+      , HE.h5_ "All cards"
+      , Chart.pie (slices allCards)
+      , HE.h5_ "Lands"
+      , Chart.pie (slices landCards)
+      ]
+
+magicColorToHtmlClass :: Scryfall.Color -> String
+magicColorToHtmlClass Scryfall.White = "w"
+magicColorToHtmlClass Scryfall.Blue = "u"
+magicColorToHtmlClass Scryfall.Black = "b"
+magicColorToHtmlClass Scryfall.Red = "r"
+magicColorToHtmlClass Scryfall.Green = "g"
+magicColorToHtmlClass Scryfall.Colorless = "c"
 
 viewCardImage :: forall a. (Scryfall.ImageUris -> String) -> Scryfall.Card -> Html a
 viewCardImage format card =
