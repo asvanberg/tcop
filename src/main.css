@@ -1,5 +1,6 @@
 :root {
   --card-width: 14em;
+  --card-height: calc(var(--card-width) * 39 / 28);
   --breakpoint-xl: 1000px;
 }
 @font-face {
@@ -146,6 +147,7 @@ menu button:hover {
 img.card {
   border-radius: 4%;
   width: var(--card-width);
+  height: var(--card-height);
 }
 div.card {
   position: relative;
