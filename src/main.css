@@ -87,9 +87,15 @@ menu button:hover {
   padding: 0;
 }
 #search .search-result {
-  border: 1px solid black;
-  font-size: 120%;
-  padding: 0.2em;
+  border: 10px solid rgb(24, 21, 16);
+  border-radius: 10px;
+  background-color: rgb(208, 200, 196);
+  padding: 5px 3px;
+}
+#search .search-result > div:first-child {
+  border: 2px solid black;
+  padding: 0 0.2em;
+  border-radius: 0.5em / 1em;
 }
 #search .search-result div.card {
   display: none;
@@ -103,8 +109,24 @@ menu button:hover {
     flex-direction: row;
     position: static;
   }
+  #search .search-result.expanded > div:first-child {
+    display: none;
+  }
+  #search .search-result.expanded {
+    border: none;
+    background-color: transparent;
+    padding: 0;
+  }
 }
 @media (hover: hover) {
+  #search .search-result:hover > div:first-child {
+    display: none;
+  }
+  #search .search-result:hover {
+    border: none;
+    background-color: transparent;
+    padding: 0;
+  }
   #search .search-result:hover div.card {
     display: inline-block;
   }
