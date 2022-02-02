@@ -17,7 +17,7 @@ import Prelude
 import Affjax as A
 import Control.Alt ((<|>))
 import Control.Apply (lift2)
-import Data.Array (catMaybes, deleteAt, elem, filter, findIndex, foldMap, head, length, mapWithIndex, nubEq, singleton, snoc, sortBy, sortWith, (:))
+import Data.Array (any, catMaybes, deleteAt, elem, filter, findIndex, foldMap, head, length, mapWithIndex, nubEq, singleton, snoc, sortBy, sortWith, (:))
 import Data.Either (Either(..), either)
 import Data.Foldable (sum)
 import Data.Map (fromFoldableWith, toUnfoldable)
@@ -371,14 +371,19 @@ viewManaProduction { commanders, cards } =
         # length
     slices c_ = deckColorIdentity
       # (map $ lift2 Chart.Slice (producers c_) magicColorToHtmlClass)
+    hasProducers = deckColorIdentity
+      # map (producers landCards)
+      # any (\p -> p > 0)
   in
-    HE.section_
-      [ HE.h4_ "Mana base"
-      , HE.h5_ "All cards"
-      , Chart.pie (slices allCards)
-      , HE.h5_ "Lands"
-      , Chart.pie (slices landCards)
-      ]
+    if not hasProducers then HE.section_ [ HE.h4_ "Mana base" ]
+    else
+      HE.section_
+        [ HE.h4_ "Mana base"
+        , HE.h5_ "All cards"
+        , Chart.pie (slices allCards)
+        , HE.h5_ "Lands"
+        , Chart.pie (slices landCards)
+        ]
 
 magicColorToHtmlClass :: Scryfall.Color -> String
 magicColorToHtmlClass Scryfall.White = "w"
