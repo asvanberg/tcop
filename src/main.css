@@ -2,6 +2,18 @@
   --card-width: 14em;
   --card-height: calc(var(--card-width) * 39 / 28);
   --breakpoint-xl: 1000px;
+  --color-green-fg: rgb(0, 115, 62);
+  --color-green-bg: rgb(186, 214, 193);
+  --color-blue-fg: rgb(14, 104, 171);
+  --color-blue-bg: rgb(179, 206, 234);
+  --color-red-fg: rgb(211, 32, 42);
+  --color-red-bg: rgb(235, 159, 130);
+  --color-white-fg: rgb(249, 250, 244);
+  --color-white-bg: rgb(248, 231, 185);
+  --color-black-fg: rgb(21, 11, 0);
+  --color-black-bg: rgb(166, 159, 157);
+  --color-colorless-fg: rgb(147, 134, 124);
+  --color-colorless-bg: rgb(191, 185, 181);
 }
 @font-face {
   font-family: "Beleren2016-Bold";
@@ -205,21 +217,25 @@ div.card div.controls button:hover {
 div.card div.controls button:hover span {
   display: inline;
 }
-.chart .W {
-  fill: white;
+.chart .w {
+  fill: var(--color-white-fg);
 }
-.chart .U {
-  fill: blue;
+.chart .u {
+  fill: var(--color-blue-fg);
 }
-.chart .B {
-  fill: black;
+.chart .b {
+  fill: var(--color-black-fg);
 }
-.chart .R {
-  fill: red;
+.chart .r {
+  fill: var(--color-red-fg);
 }
 .chart .g {
-  fill: green;
+  fill: var(--color-green-fg);
 }
 .chart .c {
-  fill: gray;
+  fill: var(--color-colorless-fg);
+}
+.chart.pie path {
+  stroke: black;
+  stroke-width: 0.05;
 }

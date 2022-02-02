@@ -33,7 +33,7 @@ pie slices =
     svg
       [ class' "chart pie"
       , style1 "transform" "rotate(-90deg)"
-      , viewBox "-1 -1 2 2"
+      , viewBox "-1.2 -1.2 2.4 2.4"
       ]
       paths
 
