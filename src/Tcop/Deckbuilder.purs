@@ -18,6 +18,7 @@ import Affjax as A
 import Control.Alt ((<|>))
 import Control.Apply (lift2)
 import Data.Array (any, catMaybes, deleteAt, elem, filter, findIndex, foldMap, head, length, mapWithIndex, nubEq, singleton, snoc, sortBy, sortWith, (:))
+import Data.Array as Array
 import Data.Either (Either(..), either)
 import Data.Foldable (sum)
 import Data.Map (fromFoldableWith, toUnfoldable)
@@ -377,8 +378,8 @@ viewInfo deck =
     isExpensive card =
       cardCost card >= 10.0
   in
-    HE.section "info"
-      [ HE.section_
+    HE.section "info" $ Array.catMaybes
+      [ Just $ HE.section_
           [ HE.h4_ "Cost"
           , HE.text $ "Total: $" <> toStringWith (fixed 0) deckCost
           , HE.h5_ "Expensive cards"
@@ -389,9 +390,10 @@ viewInfo deck =
               # map (\c -> HE.li_ $ c.name <> " ($" <> (show $ cardCost c) <> ")")
           ]
       , viewManaProduction deck
+      , viewReservedList deck
       ]
 
-viewManaProduction :: Deck -> Html Message
+viewManaProduction :: Deck -> Maybe (Html Message)
 viewManaProduction { commanders, cards } =
   let
     allCards = map (_.scryfall) $ commanders <> cards
@@ -409,9 +411,9 @@ viewManaProduction { commanders, cards } =
       # map (producers landCards)
       # any (\p -> p > 0)
   in
-    if not hasProducers then HE.section_ [ HE.h4_ "Mana base" ]
+    if not hasProducers then Nothing
     else
-      HE.section_
+      Just $ HE.section_
         [ HE.h4_ "Mana base"
         , HE.h5_ "All cards"
         , Chart.pie (slices allCards)
@@ -426,6 +428,22 @@ magicColorToHtmlClass Scryfall.Black = "b"
 magicColorToHtmlClass Scryfall.Red = "r"
 magicColorToHtmlClass Scryfall.Green = "g"
 magicColorToHtmlClass Scryfall.Colorless = "c"
+
+viewReservedList :: Deck -> Maybe (Html Message)
+viewReservedList { commanders, cards } =
+  let
+    reservedCards = (commanders <> cards)
+      # map _.scryfall
+      # filter _.reserved
+  in
+    if Array.null reservedCards then
+      Nothing
+    else
+      Just $ HE.section_
+        [ HE.h4_ "Reserved cards"
+        , HE.ul_ $ reservedCards
+            # map \reservedCard -> HE.li_ reservedCard.name
+        ]
 
 viewCardImage :: forall a. (Scryfall.ImageUris -> String) -> Scryfall.Card -> Html a
 viewCardImage format card =
