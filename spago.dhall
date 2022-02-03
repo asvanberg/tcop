@@ -25,6 +25,8 @@ to generate this file without the comments in this block.
   , "flame"
   , "foldable-traversable"
   , "foreign"
+  , "integers"
+  , "math"
   , "maybe"
   , "numbers"
   , "ordered-collections"

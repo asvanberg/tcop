@@ -7,8 +7,7 @@ module Tcop.Chart
 
 import Prelude
 
-import Data.Array (fold, intersperse)
-import Data.Foldable (sum)
+import Data.Foldable (intercalate, sum)
 import Data.Int (toNumber)
 import Data.Traversable (mapAccumL)
 import Flame (Html)
@@ -50,7 +49,7 @@ renderPath offset value total =
     percent = toNumber value / toNumber total
     largeArc = if percent > 0.5 then "1" else "0"
   in
-    fold $ intersperse " "
+    intercalate " "
       [ "M " <> show start.x <> " " <> show start.y
       , "A 1 1 0 " <> largeArc <> " 1 " <> show end.x <> " " <> show end.y
       , "L 0 0"
