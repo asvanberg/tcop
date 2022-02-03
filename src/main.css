@@ -84,10 +84,20 @@ menu button {
   padding: 0.75rem 1rem;
   background-color: transparent;
   border: none;
+  position: relative;
 }
 menu button:hover {
   background-color: white;
   cursor: pointer;
+}
+menu button ul {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  background-color: lightgrey;
 }
 #search {
   grid-area: search;
@@ -149,6 +159,8 @@ menu button:hover {
 #deck {
   grid-area: deck;
   background-color: yellow;
+}
+#deck .cards {
   display: flex;
   flex-wrap: wrap;
 }

@@ -30,6 +30,7 @@ import Effect.Aff (Milliseconds(..), delay)
 import Effect.Class (liftEffect)
 import Flame (ListUpdate, Html, (:>))
 import Flame as F
+import Flame.Html.Attribute (onSubmit)
 import Flame.Html.Attribute as HA
 import Flame.Html.Element as HE
 import Flame.Html.Event (onDragenter', onDragover', onDragstart', onDrop, onInput)
@@ -47,11 +48,13 @@ type Model =
   , deck :: Deck
   , searchResults :: Search (Array SearchResult)
   , dragging :: Maybe Scryfall.Card
+  , editingTitle :: Maybe String
   }
 
 type Deck =
   { commanders :: Array Card
   , cards :: Array Card
+  , title :: String
   }
 
 type SearchResult =
@@ -80,6 +83,10 @@ data Message
   | AddCard (Maybe Scryfall.Card)
   | RemoveCard Scryfall.UUID
   | ExpandSearchResult Int
+  | SetDeckTitle String
+  | EditDeckTitle
+  | EditingDeckTitle String
+  | CancelEditDeckTitle
 
 currentDeck :: Model -> Deck
 currentDeck = _.deck
@@ -90,12 +97,14 @@ init deck =
   , deck: fromMaybe newDeck deck
   , searchResults: Inactive
   , dragging: Nothing
+  , editingTitle: Nothing
   }
 
 newDeck :: Deck
 newDeck =
   { commanders: []
   , cards: []
+  , title: "Untitled deck"
   }
 
 update :: ListUpdate Model Message
@@ -196,6 +205,17 @@ update model message =
           in
             F.noMessages model { searchResults = Results searchTerm expandedResults }
         _ -> F.noMessages model
+    SetDeckTitle newTitle ->
+      F.noMessages model
+        { editingTitle = Nothing
+        , deck = model.deck { title = newTitle }
+        }
+    EditDeckTitle ->
+      F.noMessages model { editingTitle = Just model.deck.title }
+    EditingDeckTitle newTitle ->
+      F.noMessages model { editingTitle = Just newTitle }
+    CancelEditDeckTitle ->
+      F.noMessages model { editingTitle = Nothing }
 
 deleteFirstBy :: forall a. (a -> Boolean) -> Array a -> Array a
 deleteFirstBy p as =
@@ -296,7 +316,7 @@ cardType { scryfall: { type_line } } =
     Land
 
 viewDeck :: Model -> Html Message
-viewDeck { deck, dragging } =
+viewDeck { deck, dragging, editingTitle } =
   let
     cardsByType = fromFoldableWith (<>) $ map (lift2 Tuple cardType singleton) deck.cards
     viewCardType t cards =
@@ -309,8 +329,22 @@ viewDeck { deck, dragging } =
       , onDragover' ValidateDeckDrop
       , onDrop $ AddCard dragging
       ]
-      $ map (uncurry viewCardType)
-      $ (toUnfoldable $ cardsByType :: Array (Tuple CardType (Array Card)))
+      [ HE.h2_ $ case editingTitle of
+          Just title ->
+            [ HE.form [ onSubmit $ SetDeckTitle title ]
+                [ HE.input [ HA.value title, HA.onInput EditingDeckTitle ]
+                , HE.button [ HA.type' "submit" ] "Save"
+                , HE.button [ HA.onClick CancelEditDeckTitle ] "Cancel"
+                ]
+            ]
+          Nothing ->
+            [ HE.text deck.title
+            , HE.button [ HA.onClick EditDeckTitle ] "✎"
+            ]
+      , HE.div [ HA.class' "cards" ]
+          $ map (uncurry viewCardType)
+          $ (toUnfoldable $ cardsByType :: Array (Tuple CardType (Array Card)))
+      ]
 
 viewCommanders :: Model -> Html Message
 viewCommanders { deck: { commanders }, dragging } =

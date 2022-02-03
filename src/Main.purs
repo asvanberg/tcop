@@ -2,9 +2,10 @@ module Main where
 
 import Prelude
 
-import Data.Array (drop, head, snoc)
+import Data.Array (catMaybes, drop, head, range, snoc)
 import Data.Either (Either(..))
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
+import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Aff (Milliseconds(..), delay)
@@ -22,20 +23,25 @@ import Web.Storage.Storage as Storage
 type Model =
   { deckbuilder :: Deckbuilder.Model
   , feedback :: Array String
+  , savedDecks :: Maybe (Array String)
   }
 
 data Message
   = DeckbuilderMessage Deckbuilder.Message
   | SaveDeck
-  | LoadDeck
-  | DeckLoaded Deckbuilder.Deck
+  | LoadDeck String
+  | DeckLoaded String Deckbuilder.Deck
   | ShowFeedback String
   | HideFeedback
+  | ShowSavedDecks
+  | DecksAvailable (Array String)
+  | NewDeck
 
 init :: Model
 init =
   { deckbuilder: Deckbuilder.init Nothing
   , feedback: []
+  , savedDecks: Nothing
   }
 
 update :: ListUpdate Model Message
@@ -52,28 +58,28 @@ update model message =
             storage <- Web.window >>= Window.localStorage
             let deck = Deckbuilder.currentDeck model.deckbuilder
             let serializedDeck = Serialization.serialize deck
-            Storage.setItem "deck" serializedDeck storage
+            Storage.setItem deck.title serializedDeck storage
             pure $ Just $ ShowFeedback "Deck saved!"
         ]
-    LoadDeck ->
-      model :>
+    LoadDeck deckName ->
+      model { savedDecks = Nothing } :>
         [ join $ liftEffect $ do
             storage <- Web.window >>= Window.localStorage
-            maybeDeck <- Storage.getItem "deck" storage
+            maybeDeck <- Storage.getItem deckName storage
             pure $ case maybeDeck of
               Just serializedDeck ->
                 do
                   deserialization <- Serialization.deserialize serializedDeck
                   case deserialization of
                     Right deck ->
-                      pure $ Just $ DeckLoaded deck
+                      pure $ Just $ DeckLoaded deckName deck
                     Left error ->
                       pure $ Just $ ShowFeedback error
               Nothing ->
                 pure $ Just $ ShowFeedback "Not saved deck"
         ]
-    DeckLoaded deck ->
-      model { deckbuilder = Deckbuilder.init $ Just deck } :>
+    DeckLoaded deckName deck ->
+      model { deckbuilder = Deckbuilder.init $ Just deck { title = deckName } } :>
         [ pure $ Just $ ShowFeedback "Deck loaded" ]
     ShowFeedback feedback ->
       model { feedback = snoc model.feedback feedback } :>
@@ -81,13 +87,38 @@ update model message =
         ]
     HideFeedback ->
       F.noMessages model { feedback = drop 1 model.feedback }
+    ShowSavedDecks ->
+      if isJust model.savedDecks then
+        F.noMessages model { savedDecks = Nothing }
+      else
+        model :>
+          [ liftEffect do
+              storage <- Web.window >>= Window.localStorage
+              numDecks <- Storage.length storage
+              deckNames <- traverse (flip Storage.key storage) (range 0 numDecks)
+              pure $ Just $ DecksAvailable $ catMaybes deckNames
+          ]
+    DecksAvailable deckNames ->
+      F.noMessages model { savedDecks = Just deckNames }
+    NewDeck ->
+      F.noMessages init
 
 view :: Model -> Html Message
-view { deckbuilder, feedback } = HE.div "app"
+view { deckbuilder, feedback, savedDecks } = HE.div "app"
   [ HE.header_
       [ HE.menu_
-          [ HE.li_ $ HE.button [ HEv.onClick SaveDeck ] "Save"
-          , HE.li_ $ HE.button [ HEv.onClick LoadDeck ] "Load"
+          [ HE.li_ $ HE.button [ HEv.onClick NewDeck ] "New"
+          , HE.li_ $ HE.button [ HEv.onClick SaveDeck ] "Save"
+          , HE.li_ $ HE.button [ HEv.onClick ShowSavedDecks ]
+              [ HE.text "Load"
+              , case savedDecks of
+                  Just deckNames ->
+                    HE.ul_ $ deckNames
+                      # map \deckName ->
+                          HE.li_ $ HE.button [ HEv.onClick (LoadDeck deckName) ] deckName
+                  Nothing ->
+                    HE.text ""
+              ]
           ]
       , HE.span_ $ fromMaybe "" $ head feedback
       , HE.span_ "🍵"

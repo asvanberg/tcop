@@ -53,4 +53,5 @@ reconstructDeck :: Collection Card -> Collection Card -> Collection Card -> Deck
 reconstructDeck commanders firstHalf secondHalf =
   { commanders: map ({ scryfall: _ }) commanders.data
   , cards: map ({ scryfall: _ }) $ firstHalf.data <> secondHalf.data
+  , title: ""
   }
