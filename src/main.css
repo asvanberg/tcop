@@ -186,6 +186,8 @@ menu button ul {
   background-color: lightblue;
   display: flex;
   flex-direction: row;
+  gap: 1em;
+  padding: 1em;
 }
 #search, #deck, #commanders {
   padding: 1rem;
