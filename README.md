@@ -15,6 +15,9 @@ If you come across any problematic layouts, unintuitive interactions, or anythin
 * Remove cards
 * Card groupings
   * by type
+* Multiple decks
+* List cards on the reserved list
+* Mana base breakdown
 
 ### In the future
 * Card groupings
@@ -22,6 +25,4 @@ If you come across any problematic layouts, unintuitive interactions, or anythin
   * custom categories
 * Import/export deck
 * Link to deck
-* Multiple decks
-* List cards on restricted list
 * Nicer design 😅
