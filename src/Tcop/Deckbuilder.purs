@@ -299,8 +299,8 @@ instance cardTypeShow :: Show CardType where
   show Planeswalker = "Planeswalker"
   show Land = "Land"
 
-cardType :: Card -> CardType
-cardType { scryfall: { type_line } } =
+cardType :: Scryfall.Card -> CardType
+cardType { type_line } =
   if contains (Pattern "Creature") type_line then
     Creature
   else if contains (Pattern "Instant") type_line then
@@ -319,7 +319,7 @@ cardType { scryfall: { type_line } } =
 viewDeck :: Model -> Html Message
 viewDeck { deck, dragging, editingTitle } =
   let
-    cardsByType = fromFoldableWith (<>) $ map (lift2 Tuple cardType singleton) deck.cards
+    cardsByType = fromFoldableWith (<>) $ map (lift2 Tuple (cardType <<< _.scryfall) singleton) deck.cards
     viewCardType t cards =
       HE.div [ HA.class' "card-group" ] $ HE.div_ (show t <> " (" <> show (length cards) <> ")")
         : (map (viewCard <<< _.scryfall) $ sortBy (comparing _.scryfall.name) cards)
@@ -370,34 +370,42 @@ viewCard card =
 
 viewInfo :: Deck -> Html Message
 viewInfo deck =
+  HE.section "info" $ Array.catMaybes
+    [ viewCost deck
+    , viewManaProduction deck
+    , viewReservedList deck
+    ]
+
+viewCost :: Deck -> Maybe (Html Message)
+viewCost { commanders, cards } =
   let
-    allCards = deck.commanders <> deck.cards
+    allCards = map _.scryfall (commanders <> cards)
     cardCost card =
       fromMaybe 0.0 $ fromString =<< card.prices.usd
-    deckCost = sum $ map (cardCost <<< _.scryfall) allCards
-    isExpensive card =
-      cardCost card >= 10.0
+    deckCost = sum <<< map cardCost
+    isExpensive = ((<=) 10.0) <<< cardCost
+    { yes: expensiveLands, no: expensiveCards } = allCards
+      # filter isExpensive
+      # Array.partition ((==) Land <<< cardType)
   in
-    HE.section "info" $ Array.catMaybes
-      [ Just $ HE.section_
-          [ HE.h4_ "Cost"
-          , HE.text $ "Total: $" <> toStringWith (fixed 0) deckCost
-          , HE.h5_ "Expensive cards"
-          , HE.ul_ $ allCards
-              # map (_.scryfall)
-              # filter isExpensive
-              # sortWith _.name
-              # map (\c -> HE.li_ $ c.name <> " ($" <> (show $ cardCost c) <> ")")
-          ]
-      , viewManaProduction deck
-      , viewReservedList deck
+    Just $ HE.section_
+      [ HE.h4_ "Cost"
+      , HE.text $ "Total: $" <> toStringWith (fixed 0) (deckCost allCards)
+      , HE.h5_ $ "Expensive cards ($" <> toStringWith (fixed 0) (deckCost expensiveCards) <> ")"
+      , HE.ul_ $ expensiveCards
+          # sortWith _.name
+          # map (\c -> HE.li_ $ c.name <> " ($" <> (show $ cardCost c) <> ")")
+      , HE.h5_ $ "Expensive lands ($" <> toStringWith (fixed 0) (deckCost expensiveLands) <> ")"
+      , HE.ul_ $ expensiveLands
+          # Array.sortWith _.name
+          # map \card -> HE.li_ $ card.name <> " ($" <> (show $ cardCost card) <> ")"
       ]
 
 viewManaProduction :: Deck -> Maybe (Html Message)
 viewManaProduction { commanders, cards } =
   let
     allCards = map (_.scryfall) $ commanders <> cards
-    landCards = map (_.scryfall) $ filter (cardType >>> (==) Land) cards
+    landCards = filter (cardType >>> (==) Land) $ map (_.scryfall) cards
     deckColorIdentity = nubEq $ foldMap (_.scryfall.color_identity) commanders <> [ Scryfall.Colorless ]
     producers c_ color =
       c_
