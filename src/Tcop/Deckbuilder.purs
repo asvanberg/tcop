@@ -470,7 +470,7 @@ viewManaCurve { commanders, cards } =
       cols <- DANE.fromArray columns
       pure $ HE.section_
         [ HE.h4_ "Mana curve"
-        , Chart.column [ HA.width "10em" ] cols
+        , Chart.column [ HA.height "7em" ] cols
         ]
 
 viewCardImage :: forall a. (Scryfall.ImageUris -> String) -> Scryfall.Card -> Html a
