@@ -122,7 +122,7 @@ menu button ul {
 #search .search-result div.card {
   display: none;
 }
-@media (hover: none) {
+@media (hover: none) or (not (pointer: fine)) {
   #search .search-result.expanded div.card {
     display: inline-block;
   }
@@ -140,7 +140,7 @@ menu button ul {
     padding: 0;
   }
 }
-@media (hover: hover) {
+@media (hover: hover) and (pointer: fine) {
   #search .search-result:hover > div:first-child {
     display: none;
   }
