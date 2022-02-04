@@ -18,6 +18,7 @@ If you come across any problematic layouts, unintuitive interactions, or anythin
 * Multiple decks
 * List cards on the reserved list
 * Mana base breakdown
+* Mana curve
 
 ### In the future
 * Card groupings

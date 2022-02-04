@@ -253,3 +253,11 @@ div.card div.controls button:hover span {
   stroke: black;
   stroke-width: 0.05;
 }
+@media (hover: hover) and (pointer: fine) {
+  .chart.column g.column text.value {
+    display: none;
+  }
+  .chart.column g.column:hover text.value {
+    display: initial;
+  }
+}

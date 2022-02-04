@@ -1,18 +1,25 @@
 module Tcop.Chart
-  ( Slice(..)
+  ( Column(..)
+  , Label
+  , Slice(..)
   , Value
   , ClassName
+  , column
   , pie
   ) where
 
 import Prelude
 
+import Data.Array ((:))
+import Data.Array.NonEmpty (NonEmptyArray, length, toArray)
 import Data.Foldable (intercalate, sum)
 import Data.Int (toNumber)
+import Data.Semigroup.Foldable (maximum)
 import Data.Traversable (mapAccumL)
 import Flame (Html)
-import Flame.Html.Attribute (class', d, style1, viewBox)
-import Flame.Html.Element (path', svg)
+import Flame.Html.Attribute (class', d, fontSize, height, style1, textAnchor, viewBox, width, x, y)
+import Flame.Html.Element (createElement, g, path', rect', svg)
+import Flame.Types (NodeData)
 import Math as Math
 
 data Slice = Slice Value ClassName
@@ -55,3 +62,65 @@ renderPath offset value total =
       , "L 0 0"
       , "Z"
       ]
+
+data Column = Column Label Value
+type Label = String
+
+column :: forall a. Array (NodeData a) -> NonEmptyArray Column -> Html a
+column attributes columns =
+  let
+    padding = 2
+    columnSpacing = 3
+    columnWidth = 12
+    columnHeight = 60
+    textSize = 12
+    columnCount = length columns
+    chartHeight = padding + textSize + padding + columnHeight + padding + textSize + padding
+    chartWidth = padding + (columnCount * columnWidth + (columnCount - 1) * columnSpacing) + padding
+
+    maxValue = maximum (map (\(Column _ v) -> v) columns)
+    bars = columns
+      # flip mapAccumL padding \offset (Column label value) ->
+          { accum: offset + columnWidth + columnSpacing
+          , value: renderColumn offset label value
+          }
+
+    renderColumn offset label value =
+      let
+        x_ = offset + columnWidth / 2
+        height_ = value * columnHeight / maxValue
+        start_ = padding + textSize + padding + (columnHeight - height_)
+      in
+        g [ class' "column" ]
+          [ createElement "text"
+              [ x (show x_)
+              , y (show (chartHeight - padding))
+              , textAnchor "middle"
+              , fontSize (show textSize)
+              , class' "label"
+              ]
+              label
+          , g [ class' "bar" ]
+              [ rect'
+                  [ x (show offset)
+                  , y (show start_)
+                  , width (show columnWidth)
+                  , height (show height_)
+                  ]
+              , createElement "text"
+                  [ x (show x_)
+                  , y (show (start_ - padding))
+                  , textAnchor "middle"
+                  , fontSize (show textSize)
+                  , class' "value"
+                  ]
+                  (show value)
+              ]
+          ]
+  in
+    svg
+      ( (class' "chart column")
+          : (viewBox $ "0 0 " <> show chartWidth <> " " <> show chartHeight)
+          : attributes
+      )
+      (toArray bars.value)

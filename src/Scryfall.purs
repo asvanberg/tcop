@@ -41,6 +41,7 @@ type Card =
   , type_line :: String
   , produced_mana :: Maybe (Array (Color))
   , color_identity :: Array Color
+  , cmc :: Int
   }
 
 data Color = White | Blue | Black | Red | Green | Colorless

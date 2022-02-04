@@ -19,8 +19,9 @@ import Control.Alt ((<|>))
 import Control.Apply (lift2)
 import Data.Array (any, catMaybes, deleteAt, elem, filter, findIndex, foldMap, head, length, mapWithIndex, nubEq, singleton, snoc, sortBy, sortWith, (:))
 import Data.Array as Array
+import Data.Array.NonEmpty as DANE
 import Data.Either (Either(..), either)
-import Data.Foldable (sum)
+import Data.Foldable (maximum, sum)
 import Data.Map (fromFoldableWith, toUnfoldable)
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Number (fromString)
@@ -374,6 +375,7 @@ viewInfo deck =
     [ viewCost deck
     , viewManaProduction deck
     , viewReservedList deck
+    , viewManaCurve deck
     ]
 
 viewCost :: Deck -> Maybe (Html Message)
@@ -451,6 +453,24 @@ viewReservedList { commanders, cards } =
         [ HE.h4_ "Reserved cards"
         , HE.ul_ $ reservedCards
             # map \reservedCard -> HE.li_ reservedCard.name
+        ]
+
+viewManaCurve :: Deck -> Maybe (Html Message)
+viewManaCurve { commanders, cards } =
+  let
+    nonLands = commanders <> cards
+      # map (_.scryfall)
+      # filter (cardType >>> (/=) Land)
+    numCardsAtCmc cmc = length (filter (_.cmc >>> (==) cmc) nonLands)
+  in
+    do
+      maxCmc <- maximum (map _.cmc nonLands)
+      let cmcs = Array.range 0 maxCmc
+      let columns = map (lift2 Chart.Column show numCardsAtCmc) cmcs
+      cols <- DANE.fromArray columns
+      pure $ HE.section_
+        [ HE.h4_ "Mana curve"
+        , Chart.column [ HA.width "10em" ] cols
         ]
 
 viewCardImage :: forall a. (Scryfall.ImageUris -> String) -> Scryfall.Card -> Html a
