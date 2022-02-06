@@ -89,6 +89,7 @@ data Message
   | EditDeckTitle
   | EditingDeckTitle String
   | CancelEditDeckTitle
+  | Dragend
 
 currentDeck :: Model -> Deck
 currentDeck = _.deck
@@ -218,6 +219,8 @@ update model message =
       F.noMessages model { editingTitle = Just newTitle }
     CancelEditDeckTitle ->
       F.noMessages model { editingTitle = Nothing }
+    Dragend ->
+      F.noMessages model { dragging = Nothing }
 
 deleteFirstBy :: forall a. (a -> Boolean) -> Array a -> Array a
 deleteFirstBy p as =
@@ -273,6 +276,7 @@ viewSearchResult index card =
   HE.li
     [ HA.draggable "true"
     , onDragstart' $ Dragstart card.scryfall
+    , HA.onDragend Dragend
     , HA.class' "search-result"
     , HA.class' $ if card.expanded then "expanded" else ""
     , HA.onClick $ ExpandSearchResult index
