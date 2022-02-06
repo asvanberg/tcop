@@ -122,7 +122,7 @@ menu button ul {
 #search .search-result div.card {
   display: none;
 }
-@media (hover: none) or (not (pointer: fine)) {
+@media not all and (hover: hover) and (pointer: fine) {
   #search .search-result.expanded div.card {
     display: inline-block;
   }
