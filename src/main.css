@@ -159,16 +159,36 @@ menu button ul {
 #deck {
   grid-area: deck;
   background-color: yellow;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto 1fr;
 }
 #deck .cards {
   display: flex;
   flex-wrap: wrap;
+  grid-column: 1 / -1;
 }
 #deck div.card + div.card {
-  margin-top: -120%;
+  margin-top: calc(2em - var(--card-height));
 }
 #deck div.card:hover + div.card {
   margin-top: -5%;
+}
+#deck menu.main {
+  display: flex;
+  flex-direction: row;
+  border: 1px solid black;
+  border-radius: 4px;
+}
+#deck menu.main > li {
+  position: relative;
+  padding: 0.2em;
+}
+#deck menu.dropdown {
+  display: absolute;
+  top: 0;
+  left: 0;
+  flex-direction: column;
 }
 #commanders {
   grid-area: commander;

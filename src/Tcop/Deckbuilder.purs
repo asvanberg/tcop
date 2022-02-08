@@ -10,6 +10,8 @@ module Tcop.Deckbuilder
   , Card
   , Search
   , SearchTerm
+  , GroupingBy
+  , Category
   ) where
 
 import Prelude
@@ -23,9 +25,11 @@ import Data.Array.NonEmpty as DANE
 import Data.Either (Either(..), either)
 import Data.Foldable (maximum, sum)
 import Data.Map (fromFoldableWith, toUnfoldable)
-import Data.Maybe (Maybe(..), fromMaybe, isJust)
+import Data.Maybe (Maybe(..), fromMaybe, isJust, maybe)
 import Data.Number (fromString)
 import Data.Number.Format (fixed, toStringWith)
+import Data.Set (Set)
+import Data.Set as Set
 import Data.String (Pattern(..), contains)
 import Data.Tuple (Tuple(..), uncurry)
 import Effect.Aff (Milliseconds(..), delay)
@@ -36,12 +40,15 @@ import Flame.Html.Attribute (onSubmit)
 import Flame.Html.Attribute as HA
 import Flame.Html.Element as HE
 import Flame.Html.Event (onDragenter', onDragover', onDragstart', onDrop, onInput)
+import Flame.Types (NodeData)
 import Scryfall as Scryfall
 import Tcop.Chart as Chart
 import Web.Event.Event (Event, preventDefault) as JS
+import Web.HTML as Web
 import Web.HTML.Event.DataTransfer (setDragImage) as Drag
 import Web.HTML.Event.DragEvent (dataTransfer, fromEvent) as Drag
 import Web.HTML.HTMLImageElement as Image
+import Web.HTML.Window as Window
 
 type SearchTerm = String
 
@@ -51,12 +58,23 @@ type Model =
   , searchResults :: Search (Array SearchResult)
   , dragging :: Maybe Scryfall.Card
   , editingTitle :: Maybe String
+  , groupingBy :: GroupingBy
+  , showingGroupBy :: Boolean
   }
+
+data GroupingBy = Type | Category
 
 type Deck =
   { commanders :: Array Card
   , cards :: Array Card
   , title :: String
+  , categories :: Array Category
+  }
+
+type Category =
+  { id :: Int
+  , name :: String
+  , members :: Set Scryfall.UUID
   }
 
 type SearchResult =
@@ -90,6 +108,15 @@ data Message
   | EditingDeckTitle String
   | CancelEditDeckTitle
   | Dragend
+  | AddCategory
+  | ValidateAddToCategory JS.Event
+  | AddToCategory Int
+  | ShowGroupBy
+  | SetGroupBy GroupingBy
+  | Confirm String Message
+  | RemoveCategory Int
+  | Prompt String (String -> Message)
+  | RenameCategory Int String
 
 currentDeck :: Model -> Deck
 currentDeck = _.deck
@@ -101,6 +128,8 @@ init deck =
   , searchResults: Inactive
   , dragging: Nothing
   , editingTitle: Nothing
+  , groupingBy: Type
+  , showingGroupBy: false
   }
 
 newDeck :: Deck
@@ -108,6 +137,7 @@ newDeck =
   { commanders: []
   , cards: []
   , title: "Untitled deck"
+  , categories: []
   }
 
 update :: ListUpdate Model Message
@@ -221,6 +251,74 @@ update model message =
       F.noMessages model { editingTitle = Nothing }
     Dragend ->
       F.noMessages model { dragging = Nothing }
+    AddCategory ->
+      let
+        maxId = maximum (map _.id model.deck.categories)
+        newId = maybe 1 ((+) 1) maxId
+      in
+        F.noMessages model
+          { deck = model.deck
+              { categories = snoc model.deck.categories
+                  ( { id: newId
+                    , name: "cat #"
+                    , members: Set.empty
+                    }
+                  )
+              }
+          }
+    ValidateAddToCategory event ->
+      if isJust model.dragging then
+        model :> [ liftEffect $ JS.preventDefault event $> Nothing ]
+      else
+        F.noMessages model
+    AddToCategory categoryId ->
+      case model.dragging of
+        Just card ->
+          F.noMessages model
+            { deck = model.deck
+                { categories = model.deck.categories
+                    # map \category ->
+                        if category.id == categoryId then
+                          category { members = Set.insert card.id category.members }
+                        else
+                          category
+                }
+            }
+        Nothing ->
+          model :> []
+    ShowGroupBy ->
+      F.noMessages model { showingGroupBy = true }
+    SetGroupBy grouping ->
+      F.noMessages model { showingGroupBy = false, groupingBy = grouping }
+    Confirm prompt messageIfTrue ->
+      model :>
+        [ liftEffect $ do
+            window <- Web.window
+            confirmed <- Window.confirm prompt window
+            if confirmed then
+              pure $ Just $ messageIfTrue
+            else
+              pure Nothing
+        ]
+    RemoveCategory categoryId ->
+      F.noMessages model
+        { deck = model.deck
+            { categories = Array.filter (not <<< ((==) categoryId) <<< _.id) model.deck.categories
+            }
+        }
+    Prompt prompt messageCallback ->
+      model :>
+        [ liftEffect $ do
+            window <- Web.window
+            input <- Window.prompt prompt window
+            pure $ messageCallback <$> input
+        ]
+    RenameCategory categoryId newName ->
+      F.noMessages model
+        { deck = model.deck
+            { categories = map (\category -> if category.id == categoryId then category { name = newName } else category) model.deck.categories
+            }
+        }
 
 deleteFirstBy :: forall a. (a -> Boolean) -> Array a -> Array a
 deleteFirstBy p as =
@@ -322,34 +420,129 @@ cardType { type_line } =
     Land
 
 viewDeck :: Model -> Html Message
-viewDeck { deck, dragging, editingTitle } =
+viewDeck (model@{ deck, dragging, editingTitle }) =
+  HE.section
+    [ HA.id "deck"
+    , onDragenter' ValidateDeckDrop
+    , onDragover' ValidateDeckDrop
+    , onDrop $ AddCard dragging
+    ]
+    [ HE.h2_ $ case editingTitle of
+        Just title ->
+          [ HE.form [ onSubmit $ SetDeckTitle title ]
+              [ HE.input [ HA.value title, HA.onInput EditingDeckTitle ]
+              , HE.button [ HA.type' "submit" ] "Save"
+              , HE.button [ HA.onClick CancelEditDeckTitle ] "Cancel"
+              ]
+          ]
+        Nothing ->
+          [ HE.text deck.title
+          , HE.button [ HA.onClick EditDeckTitle ] "✎"
+          ]
+    , HE.div_ $ HE.menu [ HA.class' "main" ]
+        [ HE.li_
+            [ HE.a [ HA.onClick ShowGroupBy ] "Group by"
+            , if model.showingGroupBy then
+                HE.menu [ HA.class' "dropdown" ]
+                  [ HE.li [ HA.onClick (SetGroupBy Type) ] [ "Type" ]
+                  , HE.li [ HA.onClick (SetGroupBy Category) ] [ "Category" ]
+                  ]
+              else
+                HE.text ""
+            ]
+        ]
+    , case model.groupingBy of
+        Type -> viewDeckByType model
+        Category -> viewDeckByCategory model
+    ]
+
+viewDeckByType :: Model -> Html Message
+viewDeckByType { deck } =
   let
     cardsByType = fromFoldableWith (<>) $ map (lift2 Tuple (cardType <<< _.scryfall) singleton) deck.cards
     viewCardType t cards =
       HE.div [ HA.class' "card-group" ] $ HE.div_ (show t <> " (" <> show (length cards) <> ")")
-        : (map (viewCard <<< _.scryfall) $ sortBy (comparing _.scryfall.name) cards)
+        : (map (viewCard_ <<< _.scryfall) $ sortBy (comparing _.scryfall.name) cards)
   in
-    HE.section
-      [ HA.id "deck"
-      , onDragenter' ValidateDeckDrop
-      , onDragover' ValidateDeckDrop
-      , onDrop $ AddCard dragging
-      ]
-      [ HE.h2_ $ case editingTitle of
-          Just title ->
-            [ HE.form [ onSubmit $ SetDeckTitle title ]
-                [ HE.input [ HA.value title, HA.onInput EditingDeckTitle ]
-                , HE.button [ HA.type' "submit" ] "Save"
-                , HE.button [ HA.onClick CancelEditDeckTitle ] "Cancel"
-                ]
+    HE.div [ HA.class' "cards" ]
+      $ map (uncurry viewCardType)
+      $ (toUnfoldable $ cardsByType :: Array (Tuple CardType (Array Card)))
+
+viewDeckByCategory :: Model -> Html Message
+viewDeckByCategory model =
+  HE.div_
+    [ addNewCategory
+    , HE.div
+        [ HA.class' "cards" ] $ join
+        [ map viewCategory categories
+        , [ viewUncategorized ]
+        ]
+    ]
+  where
+  allCards = model.deck.commanders <> model.deck.cards
+  uncategorized = allCards
+    # map _.scryfall
+    # filter \card -> not (Array.any (Set.member card.id <<< _.members) categories)
+
+  addNewCategory :: Html Message
+  addNewCategory = HE.a [ HA.onClick AddCategory ] "Add new category"
+
+  categories :: Array Category
+  categories = model.deck.categories
+
+  viewCategory :: Category -> Html Message
+  viewCategory category =
+    let
+      cards = allCards
+        # map _.scryfall
+        # filter (\card -> card.id `Set.member` category.members)
+    in
+      HE.div
+        [ HA.class' "card-group"
+        , HA.onDragenter' ValidateAddToCategory
+        , HA.onDragover' ValidateAddToCategory
+        , HA.onDrop (AddToCategory category.id)
+        ] $
+        [ HE.text $ category.name <> " (" <> show (Array.length cards) <> ") "
+        , HE.a
+            [ HA.onClick
+                ( Confirm
+                    ("Are you sure you want to remove the category " <> category.name <> "?")
+                    (RemoveCategory category.id)
+                )
             ]
-          Nothing ->
-            [ HE.text deck.title
-            , HE.button [ HA.onClick EditDeckTitle ] "✎"
+            "Remove"
+        , HE.a
+            [ HA.onClick
+                ( Prompt ("Enter new name for category " <> category.name)
+                    (RenameCategory category.id)
+                )
             ]
-      , HE.div [ HA.class' "cards" ]
-          $ map (uncurry viewCardType)
-          $ (toUnfoldable $ cardsByType :: Array (Tuple CardType (Array Card)))
+            "Rename"
+        ] <>
+          ( cards #
+              map
+                \card ->
+                  viewCard
+                    [ HA.onDragstart' (Dragstart card)
+                    , HA.onDragend Dragend
+                    ]
+                    card
+          )
+
+  viewUncategorized :: Html Message
+  viewUncategorized =
+    HE.div
+      [ HA.class' "card-group" ] $ join
+      [ [ HE.div_ "Uncategorized" ]
+      , uncategorized
+          # map
+              \card ->
+                viewCard
+                  [ HA.onDragstart' (Dragstart card)
+                  , HA.onDragend Dragend
+                  ]
+                  card
       ]
 
 viewCommanders :: Model -> Html Message
@@ -360,11 +553,15 @@ viewCommanders { deck: { commanders }, dragging } =
     , onDragover' ValidateCommanderDrop
     , onDrop $ AddCommander dragging
     ]
-    $ map (viewCard <<< _.scryfall) commanders
+    $ map (viewCard_ <<< _.scryfall) commanders
 
-viewCard :: Scryfall.Card -> Html Message
-viewCard card =
-  HE.div [ HA.class' "card" ]
+viewCard_ :: Scryfall.Card -> Html Message
+viewCard_ card =
+  viewCard [] card
+
+viewCard :: Array (NodeData Message) -> Scryfall.Card -> Html Message
+viewCard attributes card =
+  HE.div (HA.class' "card" : attributes)
     [ HE.div [ HA.class' "controls" ]
         [ HE.button
             [ HA.onClick $ RemoveCard card.id ]
