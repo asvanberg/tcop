@@ -595,10 +595,10 @@ viewCard attributes card =
 viewInfo :: Deck -> Html Message
 viewInfo deck =
   HE.section "info" $ Array.catMaybes
-    [ viewCost deck
-    , viewManaProduction deck
-    , viewReservedList deck
+    [ viewManaProduction deck
     , viewManaCurve deck
+    , viewCost deck
+    , viewReservedList deck
     ]
 
 viewCost :: Deck -> Maybe (Html Message)

@@ -237,6 +237,7 @@ menu button ul {
   background-color: lightblue;
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   gap: 1em;
   padding: 1em;
 }
