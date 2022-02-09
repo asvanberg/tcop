@@ -108,7 +108,7 @@ data Message
   | EditingDeckTitle String
   | CancelEditDeckTitle
   | Dragend
-  | AddCategory
+  | AddCategory String
   | ValidateAddToCategory JS.Event
   | AddToCategory Int
   | ShowGroupBy
@@ -252,7 +252,7 @@ update model message =
       F.noMessages model { editingTitle = Nothing }
     Dragend ->
       F.noMessages model { dragging = Nothing }
-    AddCategory ->
+    AddCategory name ->
       let
         maxId = maximum (map _.id model.deck.categories)
         newId = maybe 1 ((+) 1) maxId
@@ -261,7 +261,7 @@ update model message =
           { deck = model.deck
               { categories = snoc model.deck.categories
                   ( { id: newId
-                    , name: "cat #"
+                    , name: name
                     , members: Set.empty
                     }
                   )
@@ -443,17 +443,29 @@ viewDeck (model@{ deck, dragging, editingTitle }) =
           [ HE.text deck.title
           , HE.button [ HA.onClick EditDeckTitle ] "✎"
           ]
-    , HE.div_ $ HE.menu [ HA.class' "main" ]
-        [ HE.li_
-            [ HE.a [ HA.onClick ShowGroupBy ] "Group by"
-            , if model.showingGroupBy then
-                HE.menu [ HA.class' "dropdown" ]
-                  [ HE.li [ HA.onClick (SetGroupBy Type) ] [ "Type" ]
-                  , HE.li [ HA.onClick (SetGroupBy Category) ] [ "Category" ]
-                  ]
-              else
-                HE.text ""
+    , HE.div_
+        [ HE.menu [ HA.class' "main" ]
+            [ HE.li_
+                [ HE.a [ HA.onClick ShowGroupBy ] "Group by"
+                , if model.showingGroupBy then
+                    HE.menu [ HA.class' "dropdown" ]
+                      [ HE.li [ HA.onClick (SetGroupBy Type) ] [ "Type" ]
+                      , HE.li [ HA.onClick (SetGroupBy Category) ] [ "Category" ]
+                      ]
+                  else
+                    HE.text ""
+                ]
             ]
+        , case model.groupingBy of
+            Type -> HE.text ""
+            Category ->
+              HE.menu [ HA.class' "sub" ]
+                [ HE.li_
+                    [ HE.a
+                        [ HA.onClick (Prompt "Enter new category name" AddCategory) ]
+                        "Add category"
+                    ]
+                ]
         ]
     , case model.groupingBy of
         Type -> viewDeckByType model
@@ -474,22 +486,16 @@ viewDeckByType { deck } =
 
 viewDeckByCategory :: Model -> Html Message
 viewDeckByCategory model =
-  HE.div_
-    [ addNewCategory
-    , HE.div
-        [ HA.class' "cards" ] $ join
-        [ map viewCategory categories
-        , [ viewUncategorized ]
-        ]
+  HE.div
+    [ HA.class' "cards" ] $ join
+    [ map viewCategory categories
+    , [ viewUncategorized ]
     ]
   where
   allCards = model.deck.commanders <> model.deck.cards
   uncategorized = allCards
     # map _.scryfall
     # filter \card -> not (Array.any (Set.member card.id <<< _.members) categories)
-
-  addNewCategory :: Html Message
-  addNewCategory = HE.a [ HA.onClick AddCategory ] "Add new category"
 
   categories :: Array Category
   categories = model.deck.categories
