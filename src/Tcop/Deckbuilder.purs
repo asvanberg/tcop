@@ -557,17 +557,17 @@ viewDeckByCategory model =
             , HE.menu
                 [ HA.class' "dropdown" ]
                 [ HE.li_ $ HE.a
-                    [ HA.onClick $ Confirm
-                        ("Are you sure you want to remove the category " <> category.name <> "?")
-                        (RemoveCategory category.id)
-                    ]
-                    "Remove"
-                , HE.li_ $ HE.a
                     [ HA.onClick $ Prompt
                         ("Enter new name for category " <> category.name)
                         (RenameCategory category.id)
                     ]
-                    "Rename"
+                    "✏️ Rename"
+                , HE.li_ $ HE.a
+                    [ HA.onClick $ Confirm
+                        ("Are you sure you want to remove the category " <> category.name <> "?")
+                        (RemoveCategory category.id)
+                    ]
+                    "🗑️ Delete"
                 ]
             ]
         ] <>

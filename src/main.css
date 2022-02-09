@@ -224,6 +224,7 @@ menu button ul {
   border-radius: 0 0 4px 4px;
   flex-direction: column;
   z-index: 1;
+  white-space: nowrap;
 }
 #deck :not(li) > menu.dropdown {
   border-radius: 4px;
