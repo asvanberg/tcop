@@ -31,6 +31,7 @@ import Data.Number.Format (fixed, toStringWith)
 import Data.Set (Set)
 import Data.Set as Set
 import Data.String (Pattern(..), contains)
+import Data.String as String
 import Data.Tuple (Tuple(..), uncurry)
 import Effect.Aff (Milliseconds(..), delay)
 import Effect.Class (liftEffect)
@@ -60,6 +61,7 @@ type Model =
   , editingTitle :: Maybe String
   , groupingBy :: GroupingBy
   , showingGroupBy :: Boolean
+  , filter :: String
   }
 
 data GroupingBy = Type | Category
@@ -118,6 +120,7 @@ data Message
   | Prompt String (String -> Message)
   | RenameCategory Int String
   | HideToggles
+  | SetFilter String
 
 currentDeck :: Model -> Deck
 currentDeck = _.deck
@@ -131,6 +134,7 @@ init deck =
   , editingTitle: Nothing
   , groupingBy: Type
   , showingGroupBy: false
+  , filter: ""
   }
 
 newDeck :: Deck
@@ -322,6 +326,8 @@ update model message =
         }
     HideToggles ->
       F.noMessages model { showingGroupBy = false }
+    SetFilter filter_ ->
+      F.noMessages model { filter = filter_ }
 
 deleteFirstBy :: forall a. (a -> Boolean) -> Array a -> Array a
 deleteFirstBy p as =
@@ -446,6 +452,10 @@ viewDeck (model@{ deck, dragging, editingTitle }) =
     , HE.div_
         [ HE.menu [ HA.class' "main" ]
             [ HE.li_
+                [ HE.text "Filter"
+                , HE.input [ HA.onInput SetFilter, HA.value model.filter ]
+                ]
+            , HE.li_
                 [ HE.a [ HA.onClick ShowGroupBy ] "Group by"
                 , if model.showingGroupBy then
                     HE.menu [ HA.class' "dropdown" ]
@@ -473,9 +483,11 @@ viewDeck (model@{ deck, dragging, editingTitle }) =
     ]
 
 viewDeckByType :: Model -> Html Message
-viewDeckByType { deck } =
+viewDeckByType model =
   let
-    cardsByType = fromFoldableWith (<>) $ map (lift2 Tuple (cardType <<< _.scryfall) singleton) deck.cards
+    allCards = model.deck.cards
+      # filter (String.contains (Pattern model.filter) <<< String.toLower <<< oracle <<< _.scryfall)
+    cardsByType = fromFoldableWith (<>) $ map (lift2 Tuple (cardType <<< _.scryfall) singleton) allCards
     viewCardType t cards =
       HE.div [ HA.class' "card-group" ] $ HE.div_ (show t <> " (" <> show (length cards) <> ")")
         : (map (viewCard_ <<< _.scryfall) $ sortBy (comparing _.scryfall.name) cards)
@@ -493,6 +505,7 @@ viewDeckByCategory model =
     ]
   where
   allCards = model.deck.commanders <> model.deck.cards
+    # filter (String.contains (Pattern model.filter) <<< String.toLower <<< oracle <<< _.scryfall)
   uncategorized = allCards
     # map _.scryfall
     # filter \card -> not (Array.any (Set.member card.id <<< _.members) categories)
@@ -696,3 +709,9 @@ viewCardImage format card =
       , HA.class' "card"
       , HA.createAttribute "loading" "lazy"
       ]
+
+oracle :: Scryfall.Card -> String
+oracle card =
+  fromMaybe ""
+    $ card.oracle_text
+        <|> (map (foldMap _.oracle_text) card.card_faces)

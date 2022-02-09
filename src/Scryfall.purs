@@ -42,6 +42,7 @@ type Card =
   , produced_mana :: Maybe (Array (Color))
   , color_identity :: Array Color
   , cmc :: Int
+  , oracle_text :: Maybe String
   }
 
 data Color = White | Blue | Black | Red | Green | Colorless
@@ -59,6 +60,7 @@ instance DecodeJson Color where
 
 type CardFace =
   { image_uris :: Maybe ImageUris
+  , oracle_text :: String
   }
 
 type ImageUris =
