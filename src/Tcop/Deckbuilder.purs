@@ -115,7 +115,7 @@ data Message
   | AddCategory String
   | ValidateAddToCategory JS.Event
   | AddToCategory Int
-  | ShowGroupBy
+  | ToggleGroupBy
   | SetGroupBy GroupingBy
   | Confirm String Message
   | RemoveCategory Int
@@ -295,8 +295,8 @@ update model message =
             }
         Nothing ->
           model :> []
-    ShowGroupBy ->
-      F.noMessages model { showingGroupBy = true }
+    ToggleGroupBy ->
+      F.noMessages model { showingGroupBy = not model.showingGroupBy }
     SetGroupBy grouping ->
       F.noMessages model { showingGroupBy = false, groupingBy = grouping }
     Confirm prompt messageIfTrue ->
@@ -477,8 +477,10 @@ viewDeck (model@{ deck, dragging, editingTitle }) =
                 , HE.input [ HA.onInput SetFilter, HA.value model.filter ]
                 ]
             , HE.li
-                [ HA.class' $ if model.showingGroupBy then "open" else "" ]
-                [ HE.a [ HA.onClick ShowGroupBy ] "Group by"
+                [ HA.class' $ if model.showingGroupBy then "open" else ""
+                , HA.onClick ToggleGroupBy
+                ]
+                [ HE.text "Group by"
                 , HE.menu [ HA.class' "dropdown" ]
                     [ HE.li [ HA.onClick (SetGroupBy Type) ] [ "Type" ]
                     , HE.li [ HA.onClick (SetGroupBy Category) ] [ "Category" ]
