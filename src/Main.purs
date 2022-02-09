@@ -123,7 +123,7 @@ view { deckbuilder, feedback, savedDecks } = HE.div "app"
       , HE.span_ $ fromMaybe "" $ head feedback
       , HE.span_ "🍵"
       ]
-  , HE.main_ $ (map DeckbuilderMessage) <$> Deckbuilder.view deckbuilder
+  , DeckbuilderMessage <$> Deckbuilder.view deckbuilder
   ]
 
 main :: Effect Unit

@@ -117,6 +117,7 @@ data Message
   | RemoveCategory Int
   | Prompt String (String -> Message)
   | RenameCategory Int String
+  | HideToggles
 
 currentDeck :: Model -> Deck
 currentDeck = _.deck
@@ -319,6 +320,8 @@ update model message =
             { categories = map (\category -> if category.id == categoryId then category { name = newName } else category) model.deck.categories
             }
         }
+    HideToggles ->
+      F.noMessages model { showingGroupBy = false }
 
 deleteFirstBy :: forall a. (a -> Boolean) -> Array a -> Array a
 deleteFirstBy p as =
@@ -336,8 +339,9 @@ getImageUris card =
 firstFaceImages :: Scryfall.Card -> Maybe Scryfall.ImageUris
 firstFaceImages = _.card_faces >=> head >=> _.image_uris
 
-view :: Model -> Array (Html Message)
-view model =
+view :: Model -> Html Message
+view model = HE.main
+  [ HA.onClick HideToggles ]
   [ HE.section "search" $ viewSearch model
   , viewCommanders model
   , viewDeck model
