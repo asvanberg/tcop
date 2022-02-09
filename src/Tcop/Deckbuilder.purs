@@ -24,6 +24,7 @@ import Data.Array as Array
 import Data.Array.NonEmpty as DANE
 import Data.Either (Either(..), either)
 import Data.Foldable (maximum, sum)
+import Data.Functor (mapFlipped)
 import Data.Map (fromFoldableWith, toUnfoldable)
 import Data.Maybe (Maybe(..), fromMaybe, isJust, maybe)
 import Data.Number (fromString)
@@ -77,6 +78,7 @@ type Category =
   { id :: Int
   , name :: String
   , members :: Set Scryfall.UUID
+  , toolsOpened :: Boolean
   }
 
 type SearchResult =
@@ -121,6 +123,7 @@ data Message
   | RenameCategory Int String
   | HideToggles
   | SetFilter String
+  | ToggleCategoryTools Int
 
 currentDeck :: Model -> Deck
 currentDeck = _.deck
@@ -267,6 +270,7 @@ update model message =
                   ( { id: newId
                     , name: name
                     , members: Set.empty
+                    , toolsOpened: false
                     }
                   )
               }
@@ -325,9 +329,25 @@ update model message =
             }
         }
     HideToggles ->
-      F.noMessages model { showingGroupBy = false }
+      F.noMessages model
+        { showingGroupBy = false
+        , deck = model.deck
+            { categories = mapFlipped model.deck.categories $ \category ->
+                category { toolsOpened = false }
+            }
+        }
     SetFilter filter_ ->
       F.noMessages model { filter = filter_ }
+    ToggleCategoryTools categoryId ->
+      F.noMessages model
+        { deck = model.deck
+            { categories = mapFlipped model.deck.categories $ \category ->
+                if category.id == categoryId then
+                  category { toolsOpened = not category.toolsOpened }
+                else
+                  category
+            }
+        }
 
 deleteFirstBy :: forall a. (a -> Boolean) -> Array a -> Array a
 deleteFirstBy p as =
@@ -527,20 +547,27 @@ viewDeckByCategory model =
         ] $
         [ HE.text $ category.name <> " (" <> show (Array.length cards) <> ") "
         , HE.a
-            [ HA.onClick
-                ( Confirm
-                    ("Are you sure you want to remove the category " <> category.name <> "?")
-                    (RemoveCategory category.id)
-                )
+            [ HA.onClick (ToggleCategoryTools category.id)
+            , HA.class' $ if category.toolsOpened then "open" else ""
+            , HA.class' "dropdown-container"
             ]
-            "Remove"
-        , HE.a
-            [ HA.onClick
-                ( Prompt ("Enter new name for category " <> category.name)
-                    (RenameCategory category.id)
-                )
+            [ HE.text "🔻"
+            , HE.menu
+                [ HA.class' "dropdown" ]
+                [ HE.li_ $ HE.a
+                    [ HA.onClick $ Confirm
+                        ("Are you sure you want to remove the category " <> category.name <> "?")
+                        (RemoveCategory category.id)
+                    ]
+                    "Remove"
+                , HE.li_ $ HE.a
+                    [ HA.onClick $ Prompt
+                        ("Enter new name for category " <> category.name)
+                        (RenameCategory category.id)
+                    ]
+                    "Rename"
+                ]
             ]
-            "Rename"
         ] <>
           ( cards #
               map

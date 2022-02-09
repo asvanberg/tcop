@@ -211,15 +211,22 @@ menu button ul {
 #deck *:not(.open) > .dropdown {
   display: none;
 }
+#deck .dropdown-container {
+  position: relative;
+  cursor: pointer;
+}
 #deck menu.dropdown {
   position: absolute;
   top: 100%;
   left: -1px;
-  width: calc(100% + 2px);
+  min-width: calc(100% + 2px);
   border: 1px solid black;
   border-radius: 0 0 4px 4px;
   flex-direction: column;
   z-index: 1;
+}
+#deck :not(li) > menu.dropdown {
+  border-radius: 4px;
 }
 #commanders {
   grid-area: commander;
