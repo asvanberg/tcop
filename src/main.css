@@ -68,9 +68,6 @@ main {
     grid-template-rows: 1fr minmax(10vh, auto);
   }
 }
-input {
-  width: 100%;
-}
 img {
   max-width: 100%;
 }
@@ -79,6 +76,7 @@ menu {
   margin: 0;
   padding: 0;
   display: flex;
+  background-color: lightgrey;
 }
 menu button {
   padding: 0.75rem 1rem;
@@ -102,6 +100,9 @@ menu button ul {
 #search {
   grid-area: search;
   background-color: red;
+}
+#search input {
+  width: 100%;
 }
 #search ul {
   list-style-type: none;
@@ -174,21 +175,51 @@ menu button ul {
 #deck div.card:hover + div.card {
   margin-top: -5%;
 }
-#deck menu.main {
+#deck .tools {
   display: flex;
-  flex-direction: row;
-  border: 1px solid black;
-  border-radius: 4px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5em;
 }
-#deck menu.main > li {
+#deck menu li {
+  padding: 0.3em;
+  cursor: pointer;
+}
+#deck menu li:hover {
+  background-color: white;
+}
+#deck menu:is(.main, .sub) > li {
   position: relative;
-  padding: 0.2em;
+  border: 1px solid black;
+  border-left: none;
+}
+#deck menu:is(.main, .sub) > li:first-child {
+  border-left: 1px solid black;
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+}
+#deck menu:is(.main, .sub) > li:last-child {
+  border-right: 1px solid black;
+  border-top-right-radius: 4px;
+}
+#deck menu:is(.main, .sub) > li:last-child:not(.open) {
+  border-bottom-right-radius: 4px;
+}
+#deck li.open {
+  border-bottom-right-radius: 0;
+}
+#deck *:not(.open) > .dropdown {
+  display: none;
 }
 #deck menu.dropdown {
-  display: absolute;
-  top: 0;
-  left: 0;
+  position: absolute;
+  top: 100%;
+  left: -1px;
+  width: calc(100% + 2px);
+  border: 1px solid black;
+  border-radius: 0 0 4px 4px;
   flex-direction: column;
+  z-index: 1;
 }
 #commanders {
   grid-area: commander;

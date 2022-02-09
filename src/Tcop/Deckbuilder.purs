@@ -449,21 +449,20 @@ viewDeck (model@{ deck, dragging, editingTitle }) =
           [ HE.text deck.title
           , HE.button [ HA.onClick EditDeckTitle ] "✎"
           ]
-    , HE.div_
+    , HE.div
+        [ HA.class' "tools" ]
         [ HE.menu [ HA.class' "main" ]
             [ HE.li_
                 [ HE.text "Filter"
                 , HE.input [ HA.onInput SetFilter, HA.value model.filter ]
                 ]
-            , HE.li_
+            , HE.li
+                [ HA.class' $ if model.showingGroupBy then "open" else "" ]
                 [ HE.a [ HA.onClick ShowGroupBy ] "Group by"
-                , if model.showingGroupBy then
-                    HE.menu [ HA.class' "dropdown" ]
-                      [ HE.li [ HA.onClick (SetGroupBy Type) ] [ "Type" ]
-                      , HE.li [ HA.onClick (SetGroupBy Category) ] [ "Category" ]
-                      ]
-                  else
-                    HE.text ""
+                , HE.menu [ HA.class' "dropdown" ]
+                    [ HE.li [ HA.onClick (SetGroupBy Type) ] [ "Type" ]
+                    , HE.li [ HA.onClick (SetGroupBy Category) ] [ "Category" ]
+                    ]
                 ]
             ]
         , case model.groupingBy of
