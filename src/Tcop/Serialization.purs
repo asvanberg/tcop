@@ -130,4 +130,5 @@ reconstructDeck serializableDeck commanders firstHalf secondHalf =
           # Array.filter (Array.elem id <<< _.memberOf)
           # map _.id
           # Set.fromFoldable
+      , toolsOpened: false
       }
