@@ -467,6 +467,9 @@ viewDeck (model@{ deck, dragging, editingTitle }) =
           ]
         Nothing ->
           [ HE.text deck.title
+          , HE.text " ("
+          , HE.text $ show $ Array.length deck.cards
+          , HE.text ")"
           , HE.button [ HA.onClick EditDeckTitle ] "✎"
           ]
     , HE.div
