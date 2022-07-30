@@ -6,16 +6,15 @@ module Tcop.Serialization
 import Prelude
 
 import Affjax (printError)
-import Control.Apply (lift3)
+import Control.Apply (lift2)
 import Data.Argonaut (class EncodeJson, class DecodeJson, JsonDecodeError(..), decodeJson, encodeJson, jsonEmptyObject, parseJson, stringify)
 import Data.Argonaut.Decode ((.:?), (.!=), (.:))
 import Data.Argonaut.Encode ((~>), (:=))
-import Data.Array (length, splitAt)
 import Data.Array as Array
 import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
 import Data.Set as Set
-import Data.Traversable (traverse)
+import Data.Traversable (sequence, traverse)
 import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff, parallel, sequential)
 import Scryfall (Card, Collection)
@@ -90,28 +89,34 @@ toDeck serializedDeck =
       Version2 { commanders, cards } ->
         Tuple (map _.id commanders) (map _.id cards)
     -- Scryfall allows max 75 cards/request so we split into two
-    { before, after } = splitAt (length cards / 2) cards
+    cardIdsToRequest = capLength 75 cards
   in
     sequential $ ado
       commanderCards <- parallel $ Scryfall.cardCollection commanders
-      firstHalf <- parallel $ Scryfall.cardCollection before
-      secondHalf <- parallel $ Scryfall.cardCollection after
+      cards <- map sequence $ traverse (parallel <<< Scryfall.cardCollection) cardIdsToRequest
       in
         lmap printError $
-          lift3 (reconstructDeck serializedDeck)
+          lift2 (reconstructDeck serializedDeck)
             commanderCards
-            firstHalf
-            secondHalf
+            cards
+
+capLength :: forall a. Int -> Array a -> Array (Array a)
+capLength maxLength array =
+  if Array.null array then []
+  else
+    let
+      { before, after } = Array.splitAt maxLength array
+    in
+      Array.cons before (capLength maxLength after)
 
 reconstructDeck
   :: SerializableDeck
   -> Collection Card
-  -> Collection Card
-  -> Collection Card
+  -> Array (Collection Card)
   -> Deckbuilder.Deck
-reconstructDeck serializableDeck commanders firstHalf secondHalf =
+reconstructDeck serializableDeck commanders scryfallCards =
   { commanders: map ({ scryfall: _ }) commanders.data
-  , cards: map ({ scryfall: _ }) $ firstHalf.data <> secondHalf.data
+  , cards: map ({ scryfall: _ }) $ Array.concatMap (_.data) scryfallCards
   , title: case serializableDeck of
       Version1 _ -> "Untitled deck"
       Version2 { title } -> title
