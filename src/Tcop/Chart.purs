@@ -14,13 +14,13 @@ import Data.Array ((:))
 import Data.Array.NonEmpty (NonEmptyArray, length, toArray)
 import Data.Foldable (intercalate, sum)
 import Data.Int (toNumber)
+import Data.Number as Math
 import Data.Semigroup.Foldable (maximum)
 import Data.Traversable (mapAccumL)
 import Flame (Html)
 import Flame.Html.Attribute (class', d, fontSize, height, style1, textAnchor, viewBox, width, x, y)
 import Flame.Html.Element (createElement, g, path', rect', svg)
 import Flame.Types (NodeData)
-import Math as Math
 
 data Slice = Slice Value ClassName
 type Value = Int

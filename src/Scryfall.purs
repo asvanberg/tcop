@@ -15,10 +15,10 @@ module Scryfall
 
 import Prelude
 
-import Affjax as Ajax
 import Affjax.RequestBody as Body
 import Affjax.ResponseFormat as AR
 import Affjax.StatusCode (StatusCode(..))
+import Affjax.Web as Ajax
 import Data.Argonaut (Json, decodeJson, encodeJson, toString)
 import Data.Argonaut.Decode (class DecodeJson, JsonDecodeError(..))
 import Data.Array (null)
